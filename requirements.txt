@@ -1,6 +1,2 @@
 discord
-#google
-#google-cloud
 google-cloud-secret-manager
-#https://www.youtube.com/watch?v=RfJUm-LKNBw
-#https://torbjornzetterlund.com/using-secret-manager-in-a-google-cloud-function-with-python/
