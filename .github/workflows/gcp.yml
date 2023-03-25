@@ -14,13 +14,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ env.PROJECT_ID }}
+    - id: 'auth'
+      name: Authenticate with Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+    # - uses: google-github-actions/setup-gcloud@v1
+    #   with:
+    #     project_id: ${{ env.PROJECT_ID }}
 
     - name: Build Docker Image
       run: docker build -t $IMAGE_NAME:latest .
