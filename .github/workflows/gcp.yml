@@ -18,7 +18,8 @@ jobs:
       name: Authenticate with Google Cloud
       uses: google-github-actions/auth@v0
       with:
-        credentials_json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+        token_format: 'access_token'
+        credentials_json: '${{ secrets.SERVICE_ACCOUNT_KEY }}'
     - uses: google-github-actions/setup-gcloud@v0
       with:
         project_id: ${{ env.PROJECT_ID }}
