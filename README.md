@@ -27,3 +27,13 @@ kill [PID]
 Helpful Videos:
 #https://www.youtube.com/watch?v=RfJUm-LKNBw
 #https://torbjornzetterlund.com/using-secret-manager-in-a-google-cloud-function-with-python/
+
+
+
+
+Docker on google cloud:
+https://stackoverflow.com/questions/20429284/how-do-i-run-docker-on-google-compute-engine
+sounds like i need to updload to google container instance
+
+and can update through console?
+https://stackoverflow.com/questions/62103365/how-to-deploy-container-to-gce-by-updating-container-image
