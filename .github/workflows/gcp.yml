@@ -18,9 +18,11 @@ jobs:
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        project_id: ${{ env.PROJECT_ID }}
 
-    - name: 'Use gcloud CLI'
-      run: 'gcloud info'
+    # - name: 'Use gcloud CLI'
+    #   run: 'gcloud info'
 
     - name: Build Docker Image
       run: docker build -t $IMAGE_NAME:latest .
