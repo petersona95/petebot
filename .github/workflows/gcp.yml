@@ -11,6 +11,9 @@ jobs:
       IMAGE_NAME: discord-role-bot
       PROJECT_ID: discord-role-bot-380821
     steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
     - id: 'auth'
       uses: 'google-github-actions/auth@v1'
       with:
