@@ -37,3 +37,16 @@ sounds like i need to updload to google container instance
 
 and can update through console?
 https://stackoverflow.com/questions/62103365/how-to-deploy-container-to-gce-by-updating-container-image
+
+
+
+
+How to run docker locally? and test app?
+
+run the build file
+docker build -t python-role-bot-dev .
+
+run it locally
+docker run -p 5000:5000 python-role-bot-dev:latest
+
+if you get "port is busy" you need to disable airplay in mac settings
