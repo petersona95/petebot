@@ -18,7 +18,8 @@ messageId = 1089335654879608952
 #     token = f.read()
 
 # get token from secret
-token = get_secret.get_secret_contents('dev')
+# token = get_secret.get_secret_contents('dev')
+token = 'MTA4OTMzNjQzMTU0NzI2OTIwMQ.GDTFzR.7_BUJR-JedXMr2fZrp5yOMPHQWL0s8PBCRGpAs'
 
 @client.event # decorator
 async def on_ready():
@@ -54,6 +55,10 @@ async def on_raw_reaction_add(payload):
         role = discord.utils.get(guild.roles, name='memes')
         await payload.member.add_roles(role)
 
+    elif payload.emoji.name == '⚔️':
+        role = discord.utils.get(guild.roles, name='travian')
+        await payload.member.add_roles(role)
+
 
 @client.event
 async def on_raw_reaction_remove(payload):
@@ -85,6 +90,10 @@ async def on_raw_reaction_remove(payload):
 
     elif payload.emoji.name == 'doge':
         role = discord.utils.get(guild.roles, name='memes')
+        await member.remove_roles(role)
+
+    elif payload.emoji.name == '⚔️':
+        role = discord.utils.get(guild.roles, name='travian')
         await member.remove_roles(role)
 
 
