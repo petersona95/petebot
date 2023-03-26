@@ -50,3 +50,12 @@ run it locally
 docker run -p 5000:5000 python-role-bot-dev:latest
 
 if you get "port is busy" you need to disable airplay in mac settings
+
+
+
+How to run docker on VM? 
+get the name of the image
+docker images
+
+then copy that url and run it
+docker run us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev
