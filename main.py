@@ -8,18 +8,17 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 # prod messageId
-# messageId = 1086016325094211604
+messageId = 1086016325094211604
 
 # dev messageId
-messageId = 1089335654879608952
+# messageId = 1089335654879608952
 
 # get token from file
 # with open('token.txt') as f:
 #     token = f.read()
 
 # get token from secret
-# token = get_secret.get_secret_contents('dev')
-token = 'MTA4OTMzNjQzMTU0NzI2OTIwMQ.GDTFzR.7_BUJR-JedXMr2fZrp5yOMPHQWL0s8PBCRGpAs'
+token = get_secret.get_secret_contents('prod')
 
 @client.event # decorator
 async def on_ready():
