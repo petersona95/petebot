@@ -1,0 +1,22 @@
+{
+    "botParams": {
+        "env": "local"
+    },
+    "servers": [
+        {
+            "serverName": "PETEEEE'S MEMES",
+            "guildID": 321705601640169472,
+            "messageID": 1089335654879608952
+        },
+        {
+            "serverName": "Лига Pochinki",
+            "guildID": 151178424138858497,
+            "messageID": 1086016325094211604
+        },
+        {
+            "serverName": "No Name",
+            "guildID": 1095012633331105802,
+            "messageID": 1095094164334596217
+        }
+    ]
+}

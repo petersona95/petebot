@@ -6,6 +6,13 @@ FROM python:3.8
 ADD main.py .
 ADD get_secret.py .
 ADD requirements.txt .
+ADD config.json .
+ADD token-dev.txt .
+
+ARG local_build=false
+RUN if [ "$local_build" = "false" ]; then \
+    rm token-dev.txt; \
+    fi
 
 # install dependencies
 RUN pip install -r requirements.txt
