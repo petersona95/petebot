@@ -44,7 +44,7 @@ https://stackoverflow.com/questions/62103365/how-to-deploy-container-to-gce-by-u
 How to run docker locally? and test app?
 
 run the build file
-docker build -t python-role-bot-dev .
+docker build --build-arg local_build=true -t python-role-bot-dev .
 
 run it locally
 docker run -p 5000:5000 python-role-bot-dev:latest

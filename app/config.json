@@ -1,0 +1,64 @@
+{
+    "botParams": {
+        "env": "prod"
+    },
+    "servers": [
+        {
+            "serverName": "PETEEEE'S MEMES",
+            "guildID": 321705601640169472,
+            "messageID": 1089335654879608952,
+            "roles": [
+                {
+                    "roleName": "tunes",
+                    "roleEmote": "🎵"
+                },
+                {
+                    "roleName": "travian",
+                    "roleEmote": "⚔️"
+                }
+            ]
+        },
+        {
+            "serverName": "Лига Pochinki",
+            "guildID": 151178424138858497,
+            "messageID": 1086016325094211604,
+            "roles": [
+                {
+                    "roleName": "tunes",
+                    "roleEmote": "🎵"
+                },
+                {
+                    "roleName": "game-of-the-week",
+                    "roleEmote": "🔫"
+                },
+                {
+                    "roleName": "politics",
+                    "roleEmote": "🇺🇸"
+                },
+                {
+                    "roleName": "memes",
+                    "roleEmote": "doge"
+                },
+                {
+                    "roleName": "travian",
+                    "roleEmote": "⚔️"
+                }
+            ]
+        },
+        {
+            "serverName": "No Name",
+            "guildID": 1095012633331105802,
+            "messageID": 1095153410489200730,
+            "roles": [
+                {
+                    "roleName": "Off",
+                    "roleEmote": "⚔️"
+                },
+                {
+                    "roleName": "Def",
+                    "roleEmote": "🛡️"
+                }
+            ]
+        }
+    ]
+}
