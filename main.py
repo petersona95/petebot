@@ -24,14 +24,15 @@ else:
     print('Invalid Environment. Please check the config file and ensure env is set to local, dev or prod...')
     quit()
 
-def get_messageId(guild):
+def get_server_config(guild):
     '''
     use the guild_id to look up the messageId
+    loop over the list of server configs to get matching server
     '''
     # lookup the messageId from the config.json file
     for server in config_json['servers']:
         if server['guildID'] == guild:
-            return server['messageID']
+            return server
 
 
 @client.event # decorator
@@ -44,8 +45,9 @@ async def on_raw_reaction_add(payload):
     give a role based on a reaction emoji
     '''
 
-    # get the messageId for that channel from the config. uses the guild_id from the incoming payload
-    messageId = get_messageId(payload.guild_id)
+    # get the server_config for a channel from the config. uses the guild_id from the incoming payload
+    server_config_json = get_server_config(payload.guild_id)
+    messageId = server_config_json['messageID']
 
     # create a guild object used for other things.
     guild = client.get_guild(payload.guild_id)
@@ -54,27 +56,14 @@ async def on_raw_reaction_add(payload):
     if payload.message_id != messageId:
         return
 
-    # if a user emojis the music note 
-    if payload.emoji.name == '🎵':
-        role = discord.utils.get(guild.roles, name='tunes')
-        await payload.member.add_roles(role)
-
-    elif payload.emoji.name == '🔫':
-        role = discord.utils.get(guild.roles, name='game-of-the-week')
-        await payload.member.add_roles(role)
-
-    elif payload.emoji.name == '🇺🇸':
-        role = discord.utils.get(guild.roles, name='politics')
-        await payload.member.add_roles(role)
-
-    elif payload.emoji.name == 'doge':
-        role = discord.utils.get(guild.roles, name='memes')
-        await payload.member.add_roles(role)
-
-    elif payload.emoji.name == '⚔️':
-        role = discord.utils.get(guild.roles, name='travian')
-        await payload.member.add_roles(role)
-
+    # determine which emote was used. Do nothing if no emote match
+    # loop through different roles in config
+    for role_config in server_config_json['roles']:
+        # if role emote matches with user submission
+        if role_config['roleEmote'] == payload.emoji.name:
+            # assign user the roleName
+            role = discord.utils.get(guild.roles, name= role_config['roleName'])
+            await payload.member.add_roles(role)
 
 @client.event
 async def on_raw_reaction_remove(payload):
@@ -82,38 +71,27 @@ async def on_raw_reaction_remove(payload):
     remove a role based on a reaction emoji removal
     '''
 
-    # get the messageId for that channel from the config. uses the guild_id from the incoming payload
-    messageId = get_messageId(payload.guild_id)
+    # get the server_config for a channel from the config. uses the guild_id from the incoming payload
+    server_config_json = get_server_config(payload.guild_id)
+    messageId = server_config_json['messageID']
+
+    # create a guild object used for other things.
+    guild = client.get_guild(payload.guild_id)
 
     # do nothing if the reaction is on any message that isnt the role message defined in the config
     if payload.message_id != messageId:
         return
-    
-    # figure out which channel emoji came from
-    guild = client.get_guild(payload.guild_id)
+
     # the remove_roles requires a memberid
     member = guild.get_member(payload.user_id)
 
-    # if a user removes the music note emoji
-    if payload.emoji.name == '🎵':
-        role = discord.utils.get(guild.roles, name='tunes')
-        await member.remove_roles(role)
-
-    elif payload.emoji.name == '🔫':
-        role = discord.utils.get(guild.roles, name='game-of-the-week')
-        await member.remove_roles(role)
-
-    elif payload.emoji.name == '🇺🇸':
-        role = discord.utils.get(guild.roles, name='politics')
-        await member.remove_roles(role)
-
-    elif payload.emoji.name == 'doge':
-        role = discord.utils.get(guild.roles, name='memes')
-        await member.remove_roles(role)
-
-    elif payload.emoji.name == '⚔️':
-        role = discord.utils.get(guild.roles, name='travian')
-        await member.remove_roles(role)
-
+    # determine which emote was removed. Do nothing if no emote match
+    # loop through different roles in config
+    for role_config in server_config_json['roles']:
+        # if role emote matches with user submission
+        if role_config['roleEmote'] == payload.emoji.name:
+            # assign user the roleName
+            role = discord.utils.get(guild.roles, name= role_config['roleName'])
+            await member.remove_roles(role)
 
 client.run(token)
