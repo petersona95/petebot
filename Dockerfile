@@ -7,12 +7,10 @@ ADD main.py .
 ADD get_secret.py .
 ADD requirements.txt .
 ADD config.json .
-ADD token-dev.txt .
-
-ARG local_build=false
-RUN if [ "$local_build" = "false" ]; then \
-    rm token-dev.txt; \
-    fi
+# if on local machine it will add, if on gcp it will add nothing but an empty folder
+# prevents failure because no files are found. also prevents uploading sensitive token
+# local files are not saved to git
+ADD local/ .
 
 # install dependencies
 RUN pip install -r requirements.txt
