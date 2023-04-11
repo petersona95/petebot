@@ -1,6 +1,6 @@
 {
     "botParams": {
-        "env": "dev"
+        "env": "prod"
     },
     "servers": [
         {
