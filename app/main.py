@@ -54,10 +54,8 @@ async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(f"hey {interaction.user.mention}! This is a slash command!")
 
 @bot.tree.command(name="def_request")
-@app_commands.describe(xCoordinates="Input X Coordinates for Defense Call. ex: 56")
-@app_commands.describe(yCoordinates="Input Y Coordinates for Defense Call. ex: 41")
-@app_commands.describe(troopCount="Input # Troops required for Defense Call. ex: 10000")
-async def def_request(interaction: discord.Interaction, xCoordinates: int, yCoordinates: int, troopCount: int):
+@app_commands.describe(attackDetails="Copy the attack details from Travian")
+async def def_request(interaction: discord.Interaction, attackDetails: str):
     await interaction.response.send_message(f"NEW DEFENSE CALL: {interaction.user.name} requires {troopCount} troops at ({xCoordinates} | {yCoordinates})")
 
 @bot.event
