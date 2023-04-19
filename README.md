@@ -58,9 +58,8 @@ get the name of the image
 docker images
 
 then copy that url and run it
-docker run us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev
-
-
+docker run -e env=dev us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev:latest
+-e is environment variable
 
 
 google cloud login:
@@ -78,6 +77,8 @@ https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to
 
 create a credential file:
 gcloud auth application-default login
+This will make the default credential your personal login. Need to make it use the service account instead.
+located in .config/
 
 
 getting it to work with docker:
@@ -91,7 +92,6 @@ how I actually got it to work:
 add the credential.json to the folder thats deployed with docker
 add -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" when you run docker
 ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:5000 python-role-bot-dev:latest
-
 
 
 Environment Variables:
