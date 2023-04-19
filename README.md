@@ -59,3 +59,45 @@ docker images
 
 then copy that url and run it
 docker run us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev
+
+
+
+
+google cloud login:
+first download and install cli
+-https://cloud.google.com/sdk/docs/install
+say yes to adding to path
+
+once installed, run in terminal
+gcloud auth login
+gcloud config set project discord-role-bot-380821
+
+
+now need to set up default credential, or adc
+https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to
+
+create a credential file:
+gcloud auth application-default login
+
+
+getting it to work with docker:
+IT IS UNCLEAR AT THIS TIME IF THIS DID ANYTHING
+in terminal, run:
+gcloud components install docker-credential-gcr
+restart terminal
+docker-credential-gcr configure-docker
+
+how I actually got it to work:
+add the credential.json to the folder thats deployed with docker
+add -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" when you run docker
+ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:5000 python-role-bot-dev:latest
+
+
+
+Environment Variables:
+you can set environment variables locally with:
+env=dev python main.py
+^ make sure you're running in a python terminal not bash
+
+when you run your container, you can set them there too:
+docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -e env=dev -p 5000:5000 python-role-bot-dev:latest

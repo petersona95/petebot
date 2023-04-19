@@ -1,11 +1,13 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import get_secret # function to store private key
+import get_secret # function to retrieve discord private key from gcp secret manager
 import json
+import os # used to define dev/prod token
 
-intents = discord.Intents.all()
-intents.members = True
+intents = discord.Intents.default()
+intents.members = True # required for removing roles
+intents.message_content = True # required for slash commands
 
 # create connection
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -16,16 +18,9 @@ with open('config.json') as f:
 
 config_json = json.loads(file_contents)
 
-# determine token based on config
-if config_json["botParams"]["env"] == 'local':
-    with open('token-dev.txt') as f:
-        token = f.read()
-elif config_json["botParams"]["env"] in ['dev', 'prod']:
-    env = config_json["botParams"]["env"]
-    token = get_secret.get_secret_contents(env)
-else:
-    print('Invalid Environment. Please check the config file and ensure env is set to local, dev or prod...')
-    quit()
+# determine token based on environment variable
+env = os.getenv['env']
+token = get_secret.get_secret_contents(env)
 
 def get_server_config(guild):
     '''
@@ -43,7 +38,8 @@ async def on_ready():
     print("bot is logged in")
     try:
         # syncing is used for /commands
-        # I believe its used to show /command options available for users
+        # Its used to show /command options available for users in discord itself. They're called trees in discord
+        # by not defining a guild_id its considered a global tree. it can take up to 24 hours to refresh on servers
         synced = await bot.tree.sync()
         print(f"synced {len(synced)} command(s)")
     except Exception as e:
@@ -53,10 +49,12 @@ async def on_ready():
 async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(f"hey {interaction.user.mention}! This is a slash command!")
 
-@bot.tree.command(name="def_request")
-@app_commands.describe(attackDetails="Copy the attack details from Travian")
-async def def_request(interaction: discord.Interaction, attackDetails: str):
-    await interaction.response.send_message(f"NEW DEFENSE CALL: {interaction.user.name} requires {troopCount} troops at ({xCoordinates} | {yCoordinates})")
+@bot.tree.command(name="add_role_channel", description="Create a new role in the config for this channel")
+@app_commands.describe(role="channel role in discord")
+@app_commands.describe(emote="emote used to gain access to channel")
+async def add_role_channel(interaction: discord.Interaction, role: str, emote: str):
+    # all slash commands require a response otherwise it will error
+    await interaction.response.send_message(f"I HEAR YOU {interaction.user.name}, I'm adding {role} role and {emote} troops")
 
 @bot.event
 async def on_raw_reaction_add(payload):
