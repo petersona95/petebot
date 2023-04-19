@@ -19,7 +19,7 @@ with open('config.json') as f:
 config_json = json.loads(file_contents)
 
 # determine token based on environment variable
-env = os.getenv['env']
+env = os.getenv('env')
 token = get_secret.get_secret_contents(env)
 
 def get_server_config(guild):
