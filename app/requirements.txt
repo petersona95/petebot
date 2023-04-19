@@ -1,2 +1,3 @@
 discord
 google-cloud-secret-manager
+firebase_admin

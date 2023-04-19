@@ -1,9 +1,12 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import get_secret # function to retrieve discord private key from gcp secret manager
 import json
 import os # used to define dev/prod token
+
+# py files
+import get_secret # function to retrieve discord private key from gcp secret manager
+import firestore # used to talk to firestore
 
 intents = discord.Intents.default()
 intents.members = True # required for removing roles
@@ -12,25 +15,9 @@ intents.message_content = True # required for slash commands
 # create connection
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# get config file
-with open('config.json') as f:
-    file_contents = f.read()
-
-config_json = json.loads(file_contents)
-
 # determine token based on environment variable
 env = os.getenv('env')
 token = get_secret.get_secret_contents(env)
-
-def get_server_config(guild):
-    '''
-    use the guild_id to look up the messageId
-    loop over the list of server configs to get matching server
-    '''
-    # lookup the messageId from the config.json file
-    for server in config_json['servers']:
-        if server['guildID'] == guild:
-            return server
 
 
 @bot.event # decorator
@@ -62,25 +49,26 @@ async def on_raw_reaction_add(payload):
     give a role based on a reaction emoji
     '''
 
-    # get the server_config for a channel from the config. uses the guild_id from the incoming payload
-    server_config_json = get_server_config(payload.guild_id)
-    messageId = server_config_json['messageID']
+    # get the server_config for a channel from firestore. uses the guild_id from the incoming payload
+    messageId = firestore.get_messageID(payload.guild_id)
 
     # create a guild object used for other things.
     guild = bot.get_guild(payload.guild_id)
 
-    # do nothing if the reaction is on any message that isnt the role message defined in the config
+    # do nothing if the reaction is on any message that isnt the role message defined in firestore
     if payload.message_id != messageId:
         return
 
-    # determine which emote was used. Do nothing if no emote match
-    # loop through different roles in config
-    for role_config in server_config_json['roles']:
-        # if role emote matches with user submission
-        if role_config['roleEmote'] == payload.emoji.name:
-            # assign user the roleName
-            role = discord.utils.get(guild.roles, name= role_config['roleName'])
-            await payload.member.add_roles(role)
+    # look up the associated role in firestore based on the emote from the payload
+    # do nothing if the reaction does not match a document in firestore
+    firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
+    if firestoreRoleName == None:
+        print('No Role configured for ' + payload.emoji.name + ', taking no action.')
+        return
+
+    # assign user the roleName
+    discordRoleName = discord.utils.get(guild.roles, name=firestoreRoleName)
+    await payload.member.add_roles(discordRoleName)
 
 @bot.event
 async def on_raw_reaction_remove(payload):
@@ -88,9 +76,8 @@ async def on_raw_reaction_remove(payload):
     remove a role based on a reaction emoji removal
     '''
 
-    # get the server_config for a channel from the config. uses the guild_id from the incoming payload
-    server_config_json = get_server_config(payload.guild_id)
-    messageId = server_config_json['messageID']
+    # get the server_config for a channel from firestore. uses the guild_id from the incoming payload
+    messageId = firestore.get_messageID(payload.guild_id)
 
     # create a guild object used for other things.
     guild = bot.get_guild(payload.guild_id)
@@ -102,13 +89,15 @@ async def on_raw_reaction_remove(payload):
     # the remove_roles requires a memberid
     member = guild.get_member(payload.user_id)
 
-    # determine which emote was removed. Do nothing if no emote match
-    # loop through different roles in config
-    for role_config in server_config_json['roles']:
-        # if role emote matches with user submission
-        if role_config['roleEmote'] == payload.emoji.name:
-            # assign user the roleName
-            role = discord.utils.get(guild.roles, name= role_config['roleName'])
-            await member.remove_roles(role)
+    # look up the associated role in firestore based on the emote from the payload
+    # do nothing if the reaction does not match a document in firestore
+    firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
+    if firestoreRoleName == None:
+        print('No Role configured for ' + payload.emoji.name + ', taking no action.')
+        return
+
+    # assign user the roleName
+    discordRoleName = discord.utils.get(guild.roles, name=firestoreRoleName)
+    await member.remove_roles(discordRoleName)
 
 bot.run(token)
