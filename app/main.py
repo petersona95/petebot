@@ -4,7 +4,7 @@ from discord.ext import commands
 import os # used to define dev/prod token
 
 # py files
-import get_secret # function to retrieve discord private key from gcp secret manager
+import gc_secrets # function to retrieve discord private key from gcp secret manager
 import firestore # used to talk to firestore
 
 intents = discord.Intents.default()
@@ -16,7 +16,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # determine token based on environment variable
 env = os.getenv('env')
-token = get_secret.get_secret_contents(env)
+# ID of the secret to create.
+if env=='dev':
+    secretName = "discord-role-bot-token-dev"
+elif env=='prod':
+    secretName = "discord-role-bot-token"
+token = gc_secrets.get_secret_contents(secretName)
 
 
 @bot.event # decorator
@@ -41,8 +46,11 @@ Ask user for emote/role. Create a new record for that association in Firestore
 @app_commands.describe(role="Name of role in discord")
 async def add_role(interaction: discord.Interaction, emote: str, role: str):
     # all slash commands require a response otherwise it will error
+    admin_user_id = gc_secrets.get_secret_contents('discord-bot-admin-user-id')
+    if interaction.user.id != admin_user_id:
+        await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
     response = firestore.add_role(interaction.guild_id, emote, role)
-    await interaction.response.send_message(f"Hell {interaction.user.name}, {response}")
+    await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
 
 '''
 /REMOVE_ROLE:
@@ -54,6 +62,9 @@ If the association doesn't exist in Firestore let the user know.
 @app_commands.describe(emote="Emote used to gain that role")
 async def remove_role(interaction: discord.Interaction, emote: str):
     # all slash commands require a response otherwise it will error
+    admin_user_id = gc_secrets.get_secret_contents('discord-bot-admin-user-id')
+    if interaction.user.id != admin_user_id:
+        await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
     response = firestore.remove_role(interaction.guild_id, emote)
     await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
 
