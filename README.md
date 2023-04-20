@@ -1,3 +1,4 @@
+# discord-role-bot
 This is a personal project to learn Google Cloud while also moderating elements of a few personal discord communities.
 The primary feature of this application is to serve a discord role bot, aka federate granting roles to users on specific actions.
 Currently the bot watches for emotes on a specific message. Upon seeing an emote from a user it assigns a user that specified role.
