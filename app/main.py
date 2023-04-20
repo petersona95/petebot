@@ -47,8 +47,9 @@ Ask user for emote/role. Create a new record for that association in Firestore
 async def add_role(interaction: discord.Interaction, emote: str, role: str):
     # all slash commands require a response otherwise it will error
     admin_user_id = gc_secrets.get_secret_contents('discord-bot-admin-user-id')
-    if interaction.user.id != admin_user_id:
+    if interaction.user.id != int(admin_user_id):
         await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
+        return
     response = firestore.add_role(interaction.guild_id, emote, role)
     await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
 
@@ -63,8 +64,9 @@ If the association doesn't exist in Firestore let the user know.
 async def remove_role(interaction: discord.Interaction, emote: str):
     # all slash commands require a response otherwise it will error
     admin_user_id = gc_secrets.get_secret_contents('discord-bot-admin-user-id')
-    if interaction.user.id != admin_user_id:
+    if interaction.user.id != int(admin_user_id):
         await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
+        return
     response = firestore.remove_role(interaction.guild_id, emote)
     await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
 
