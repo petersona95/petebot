@@ -81,10 +81,9 @@ async def show_roles(ctx):
     # if roles exist
     if role_list:
         response = ''
-        key_list = []
         for dict in role_list:
-            for i in dict:
-                response += f'\n Emote: {i} | Role: #{dict[i]}'
+            #for i in dict:
+            response += f'\n {dict["roleEmote"]} | #{dict["roleName"]}'
         response = f'The following emote/roles are set for this server:{response}'
     else:
         response = 'There are currently no emote/roles set for this server. Add one using /add_role.'

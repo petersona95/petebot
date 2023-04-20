@@ -24,7 +24,7 @@ def get_messageID(guildID):
         messageID = doc_json['messageID']
         return int(messageID) # its a string in firestore, convert to int to match payload
     else:
-        print(u'No such document!')
+        print(u'A document for that guild does not exist!')
 
 def get_role(guildID, payloadEmote):
     doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote)
@@ -32,10 +32,10 @@ def get_role(guildID, payloadEmote):
 
     if doc.exists:
         doc_json = doc.to_dict()
-        roleName = doc_json[payloadEmote]
+        roleName = doc_json['roleName']
         return roleName
     else:
-        print(u'No such document!')
+        print(u'A document for that emote does not exist!')
         return None
 
 def add_role(guildID, payloadEmote, roleName):
@@ -50,18 +50,19 @@ def add_role(guildID, payloadEmote, roleName):
 
     if doc.exists:
         doc_json = doc.to_dict()
-        oldRoleName = doc_json[payloadEmote]
+        oldRoleName = doc_json['roleName']
         print(f'I already see a role called {oldRoleName} for emote {payloadEmote}.')
         exists = True
 
     # add an emote:roleName to roles collection
     data = {
-    payloadEmote: roleName
+        u'roleName': roleName,
+        u'roleEmote': payloadEmote
     }
     # add the document
     db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).set(data)
     if exists == True:
-        return f'I have updated the rule for emote {payloadEmote}. I''ve changed the role from {oldRoleName} to {roleName}'
+        return f'I have updated the rule for emote {payloadEmote}. Ive changed the role from {oldRoleName} to {roleName}'
     else:
         return f'I have created a new rule for the emote {payloadEmote} and role {roleName}'
 
@@ -80,11 +81,10 @@ def remove_role(guildID, payloadEmote):
 
     if doc.exists:
         doc_json = doc.to_dict()
-        RoleName = doc_json[payloadEmote]
+        RoleName = doc_json['roleName']
         # delete an emote:roleName to roles collection
         db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).delete()
         return f'The rule for the emote {payloadEmote} and role {RoleName} has been successfully deleted!'
-        exists = True
     elif exists == False:
         return f'No role found for emote {payloadEmote}. Taking no action.'
 
@@ -99,9 +99,6 @@ def show_roles(guildID):
     docs = db.collection(u'servers').document(str(guildID)).collection(u'roles').stream()
     doc_list = []
     for doc in docs:
-        # dict = {'id': doc.id , 'document' : doc.to_dict()}
-        # doc_list.append(dict)
-
         doc_list.append(doc.to_dict())
     if not doc_list:
         print('There are no roles currently set for this server.')
@@ -111,10 +108,11 @@ def show_roles(guildID):
 
 # print(retreive_role(321705601640169472,'🎵'))
 #add_role(321705601640169472,'🤣', 'test2')
-#remove_role(321705601640169472,'🤣', 'test2')
+# print(remove_role(321705601640169472,'🤣'))
 
 
-# add_role(321705601640169472,'🤣', 'test')
+# add_role(321705601640169472,'🤣', 'testabc')
 # add_role(321705601640169472,'🎵', 'tunes')
 # print(show_roles(321705601640169472))
 # print(get_role(321705601640169472,'🎵'))
+
