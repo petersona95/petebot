@@ -1,7 +1,6 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import json
 import os # used to define dev/prod token
 
 # py files
@@ -32,17 +31,55 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-@bot.tree.command(name="hello")
-async def hello(interaction: discord.Interaction):
-    await interaction.response.send_message(f"hey {interaction.user.mention}! This is a slash command!")
-
-@bot.tree.command(name="add_role_channel", description="Create a new role in the config for this channel")
-@app_commands.describe(role="channel role in discord")
-@app_commands.describe(emote="emote used to gain access to channel")
-async def add_role_channel(interaction: discord.Interaction, role: str, emote: str):
+# SLASH COMMANDS
+'''
+/ADD_ROLE:
+Ask user for emote/role. Create a new record for that association in Firestore
+'''
+@bot.tree.command(name="add_role", description="Create a new role/emote combination for this channel")
+@app_commands.describe(emote="Emote used to gain that role")
+@app_commands.describe(role="Name of role in discord")
+async def add_role(interaction: discord.Interaction, emote: str, role: str):
     # all slash commands require a response otherwise it will error
-    await interaction.response.send_message(f"I HEAR YOU {interaction.user.name}, I'm adding {role} role and {emote} troops")
+    response = firestore.add_role(interaction.guild_id, emote, role)
+    await interaction.response.send_message(f"Hell {interaction.user.name}, {response}")
 
+'''
+/REMOVE_ROLE:
+Ask user for emote/role. Remove the record for that association from Firestore.
+If the association doesn't exist in Firestore let the user know.
+'''
+
+@bot.tree.command(name="remove_role", description="Remove role/emote combination for this channel")
+@app_commands.describe(emote="Emote used to gain that role")
+async def remove_role(interaction: discord.Interaction, emote: str):
+    # all slash commands require a response otherwise it will error
+    response = firestore.remove_role(interaction.guild_id, emote)
+    await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
+
+'''
+!SHOW_ROLES:
+Show a user every single emote/role combination in firestore.
+If there are no associations in Firestore let the user know.
+'''
+@bot.command()
+async def show_roles(ctx):
+    role_list = firestore.show_roles(ctx.message.guild.id)
+    # if roles exist
+    if role_list:
+        response = ''
+        key_list = []
+        for dict in role_list:
+            for i in dict:
+                response += f'\n Emote: {i} | Role: #{dict[i]}'
+        response = f'The following emote/roles are set for this server:{response}'
+    else:
+        response = 'There are currently no emote/roles set for this server. Add one using /add_role.'
+    await ctx.send(f"Hello {ctx.message.author}, {response}")
+
+
+
+# EVENTS
 @bot.event
 async def on_raw_reaction_add(payload):
     '''
