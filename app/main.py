@@ -4,7 +4,7 @@ from discord.ext import commands
 import os # used to define dev/prod token
 
 # py files
-import gc_secrets # function to retrieve discord private key from gcp secret manager
+import gcp_secrets # function to retrieve discord private key from gcp secret manager
 import firestore # used to talk to firestore
 
 intents = discord.Intents.default()
@@ -21,7 +21,7 @@ if env=='dev':
     secretName = "discord-role-bot-token-dev"
 elif env=='prod':
     secretName = "discord-role-bot-token"
-token = gc_secrets.get_secret_contents(secretName)
+token = gcp_secrets.get_secret_contents(secretName)
 
 
 @bot.event # decorator
@@ -31,6 +31,13 @@ async def on_ready():
         # syncing is used for /commands
         # Its used to show /command options available for users in discord itself. They're called trees in discord
         # by not defining a guild_id its considered a global tree. it can take up to 24 hours to refresh on servers
+        # BUG: I shouldn't have this here because every time the shard invalidates it re-syncs the functions.
+        '''
+        2023-04-20 22:36:42 INFO     discord.gateway Shard ID None session has been invalidated.
+        2023-04-20 22:36:47 INFO     discord.gateway Shard ID None has connected to Gateway (Session ID: 08fa2f592630f7558353482ffbd1f724).
+        bot is logged in
+        synced 2 command(s)
+        '''
         synced = await bot.tree.sync()
         print(f"synced {len(synced)} command(s)")
     except Exception as e:
@@ -47,7 +54,7 @@ BUG: Currently using custom emoji's does not work. the interaction receives a we
 @app_commands.describe(role="Name of role in discord")
 async def add_role(interaction: discord.Interaction, emote: str, role: str):
     # all slash commands require a response otherwise it will error
-    admin_user_id = gc_secrets.get_secret_contents('discord-bot-admin-user-id')
+    admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
     if interaction.user.id != int(admin_user_id):
         await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
         return
@@ -64,7 +71,7 @@ If the association doesn't exist in Firestore let the user know.
 @app_commands.describe(emote="Emote used to gain that role")
 async def remove_role(interaction: discord.Interaction, emote: str):
     # all slash commands require a response otherwise it will error
-    admin_user_id = gc_secrets.get_secret_contents('discord-bot-admin-user-id')
+    admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
     if interaction.user.id != int(admin_user_id):
         await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
         return
