@@ -1,21 +1,15 @@
 # Import the Secret Manager client library.
 from google.cloud import secretmanager
 
-def get_secret_contents(env):
+def get_secret_contents(secretName):
     # GCP project in which to store secrets in Secret Manager.
     project_id = "885066695413"
-
-    # ID of the secret to create.
-    if env=='dev':
-        secret_id = "discord-role-bot-token-dev"
-    elif env=='prod':
-        secret_id = "discord-role-bot-token"
 
     # Create the Secret Manager client.
     client = secretmanager.SecretManagerServiceClient()
 
     # Build the parent name from the project.
-    resource_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    resource_name = f"projects/{project_id}/secrets/{secretName}/versions/latest"
 
     # Access the secret version.
     response = client.access_secret_version(request={"name": resource_name})
