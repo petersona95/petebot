@@ -40,6 +40,7 @@ async def on_ready():
 '''
 /ADD_ROLE:
 Ask user for emote/role. Create a new record for that association in Firestore
+BUG: Currently using custom emoji's does not work. the interaction receives a weird format for the emoji <yup:serverid?> but the assign roles sees :yup:
 '''
 @bot.tree.command(name="add_role", description="Create a new role/emote combination for this channel")
 @app_commands.describe(emote="Emote used to gain that role")
