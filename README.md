@@ -17,7 +17,7 @@ Currently the bot watches for emotes on a specific message. Upon seeing an emote
 1. Run the build file
 `docker build --build-arg local_build=true -t python-role-bot-dev .`
 
-2. Run that container locally
+2. Run the built container locally
 `docker run -p 5000:5000 python-role-bot-dev:latest`
 
 Tip: If you get "port is busy" you need to disable airplay in mac settings. It uses the same port as docker.
@@ -34,8 +34,8 @@ Tip: If you get "port is busy" you need to disable airplay in mac settings. It u
 
 
 ## Setting Up Google Cloud CLI on Local Machine:
-### Doing this will allow you to access GCP services on your local machine. \n
-1). First download and install [the cli](https://cloud.google.com/sdk/docs/install)
+### Doing this will allow you to access GCP services on your local machine.
+1). First download and install [the CLI](https://cloud.google.com/sdk/docs/install)
 - Say yes to adding to path. Allows you to reference the CLI from terminal
 
 2). Once installed, run in terminal:
@@ -45,7 +45,7 @@ gcloud config set project discord-role-bot-380821
 ```
 
 3). Now we need to set up default credential, or [ADC](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to)
-`gcloud auth application-default login`
+```gcloud auth application-default login```
 - This will make the default credential your personal login
 
 
@@ -53,6 +53,7 @@ gcloud config set project discord-role-bot-380821
 ### IT IS UNCLEAR AT THIS TIME IF THIS DID ANYTHING
 1). In terminal, run:
 `gcloud components install docker-credential-gcr`
+
 2). Restart terminal, then run:
 `docker-credential-gcr configure-docker`
 
@@ -64,11 +65,11 @@ ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:50
 ```
 
 ### Environment Variables:
-- you can set environment variables locally with:
+- You can set environment variables locally with:
 `env=dev python main.py`
-  - ^ make sure you're running in a python terminal not bash
+  - Make sure you're running in a python terminal not bash
 
-- when you run your container, you can set them there too:
+- When you run your container, you can set them there too:
 `docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -e env=dev -p 5000:5000 python-role-bot-dev:latest`
 
 
@@ -76,5 +77,6 @@ ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:50
 The following are links/tutorials that help me run/set up the bot.
 
 ### Helpful Videos:
-#https://www.youtube.com/watch?v=RfJUm-LKNBw
-#https://torbjornzetterlund.com/using-secret-manager-in-a-google-cloud-function-with-python/
+https://www.youtube.com/watch?v=RfJUm-LKNBw
+
+https://torbjornzetterlund.com/using-secret-manager-in-a-google-cloud-function-with-python/
