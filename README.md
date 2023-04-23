@@ -77,6 +77,5 @@ ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:50
 The following are links/tutorials that help me run/set up the bot.
 
 ### Helpful Videos:
-https://www.youtube.com/watch?v=RfJUm-LKNBw
-
-https://torbjornzetterlund.com/using-secret-manager-in-a-google-cloud-function-with-python/
+- [Hosting python on GCP Compute Engine](https://www.youtube.com/watch?v=RfJUm-LKNBw)
+- [Getting a secret via Python](https://torbjornzetterlund.com/using-secret-manager-in-a-google-cloud-function-with-python/)
