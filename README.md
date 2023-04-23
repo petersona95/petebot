@@ -1,9 +1,9 @@
-### Goal
+# Overview
 This is a personal project to learn Google Cloud while also moderating elements of a few personal discord communities.
 The primary feature of this application is to serve a discord role bot, aka federate granting roles to users on specific actions.
 Currently the bot watches for emotes on a specific message. Upon seeing an emote from a user it assigns a user that specified role.
 
-### Technologies Used:
+# Technologies Used:
 Python
 Docker
 Github Actions
@@ -11,7 +11,7 @@ Google Cloud Artifact Registry
 Google Cloud Compute Engine
 Firebase Firestore
 
-## Using the Bot:
+# Using the Bot:
 ### Running the Container Locally:
 
 run the build file
