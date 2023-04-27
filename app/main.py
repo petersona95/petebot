@@ -7,6 +7,25 @@ import os # used to define dev/prod token
 import gcp_secrets # function to retrieve discord private key from gcp secret manager
 import firestore # used to talk to firestore
 
+'''
+logger
+'''
+
+import logging
+from sys import stdout
+
+# Define logger
+logger = logging.getLogger('mylogger')
+
+logger.setLevel(logging.DEBUG) # set logger level
+logFormatter = logging.Formatter\
+("%(name)-12s %(asctime)s %(levelname)-8s %(filename)s:%(funcName)s %(message)s")
+consoleHandler = logging.StreamHandler(stdout) #set streamhandler to stdout
+consoleHandler.setFormatter(logFormatter)
+logger.addHandler(consoleHandler)
+
+logger.info('This is an info log')
+
 intents = discord.Intents.default()
 intents.members = True # required for removing roles
 intents.message_content = True # required for slash commands
