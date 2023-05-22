@@ -1,3 +1,4 @@
 discord
 google-cloud-secret-manager
+google-cloud-logging
 firebase_admin
