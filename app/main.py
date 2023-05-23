@@ -6,6 +6,7 @@ import os # used to define dev/prod token
 # py files
 import gcp_secrets # function to retrieve discord private key from gcp secret manager
 import firestore # used to talk to firestore
+import logger # used to write logs to google log explorer as well as to stdout
 
 
 intents = discord.Intents.default()
@@ -27,7 +28,11 @@ token = gcp_secrets.get_secret_contents(secretName)
 
 @bot.event # decorator
 async def on_ready():
-    print("bot is logged in")
+    logger.write_log(
+        env=env,
+        payload='Bot is logged in.',
+        severity='Info'
+    )    
     try:
         # syncing is used for /commands
         # Its used to show /command options available for users in discord itself. They're called trees in discord
@@ -40,9 +45,17 @@ async def on_ready():
         synced 2 command(s)
         '''
         synced = await bot.tree.sync()
-        print(f"synced {len(synced)} command(s)")
+        logger.write_log(
+            env=env,
+            payload=f"synced {len(synced)} command(s)",
+            severity='Info'
+        )
     except Exception as e:
-        print(e)
+        logger.write_log(
+            env=env,
+            payload=str(e),
+            severity='Error'
+        )
 
 # SLASH COMMANDS
 '''
@@ -121,12 +134,22 @@ async def on_raw_reaction_add(payload):
     # do nothing if the reaction does not match a document in firestore
     firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
     if firestoreRoleName == None:
-        print('No Role configured for ' + payload.emoji.name + ', taking no action.')
+        logger.write_log(
+            env=env,
+            payload=f"No Role configured for {payload.emoji.name}, taking no action.",
+            severity='Info'
+        )
         return
 
     # assign user the roleName
     discordRoleName = discord.utils.get(guild.roles, name=firestoreRoleName)
     await payload.member.add_roles(discordRoleName)
+
+    logger.write_log(
+        env=env,
+        payload=f"User {payload.member} emoted {payload.emoji.name}. Adding role #{firestoreRoleName}.",
+        severity='Info'
+    )
 
 @bot.event
 async def on_raw_reaction_remove(payload):
@@ -151,11 +174,20 @@ async def on_raw_reaction_remove(payload):
     # do nothing if the reaction does not match a document in firestore
     firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
     if firestoreRoleName == None:
-        print('No Role configured for ' + payload.emoji.name + ', taking no action.')
+        logger.write_log(
+            env=env,
+            payload=f'No Role configured for {payload.emoji.name}, taking no action.',
+            severity='Info'
+        )
         return
 
     # assign user the roleName
     discordRoleName = discord.utils.get(guild.roles, name=firestoreRoleName)
     await member.remove_roles(discordRoleName)
+    logger.write_log(
+        env=env,
+        payload=f'Removed role {firestoreRoleName} from user {payload.user_id}.',
+        severity='Info'
+    )
 
 bot.run(token)

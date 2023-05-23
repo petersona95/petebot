@@ -66,7 +66,7 @@ ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:50
 
 ### Environment Variables:
 - You can set environment variables locally with:
-`env=dev python main.py`
+`env=dev debug=true python main.py`
   - Make sure you're running in a python terminal not bash
 
 - When you run your container, you can set them there too:

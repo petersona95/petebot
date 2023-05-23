@@ -1,6 +1,10 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+import os
+import logger
+
+env = os.getenv('env') # for logging
 
 # Always use the application default credentials
 # Default creds are inhereted on VM
@@ -26,7 +30,12 @@ def get_messageID(guildID):
         messageID = doc_json['messageID']
         return int(messageID) # its a string in firestore, convert to int to match payload
     else:
-        print(u'A document for that guild does not exist!')
+        logger.write_log(
+            env=env,
+            payload=f"No messageID exists for guildID: {guildID}. No action was taken.",
+            severity='Warning'
+        )
+
 
 def get_role(guildID, payloadEmote):
     '''
@@ -40,7 +49,11 @@ def get_role(guildID, payloadEmote):
         roleName = doc_json['roleName']
         return roleName
     else:
-        print(u'A document for that emote does not exist!')
+        logger.write_log(
+            env=env,
+            payload=f"No document exists for {payloadEmote}, taking no action.",
+            severity='Info'
+        )
         return None
 
 def add_role(guildID, payloadEmote, roleName):
@@ -56,7 +69,11 @@ def add_role(guildID, payloadEmote, roleName):
     if doc.exists:
         doc_json = doc.to_dict()
         oldRoleName = doc_json['roleName']
-        print(f'I already see a role called #{oldRoleName} for emote {payloadEmote}.')
+        logger.write_log(
+            env=env,
+            payload=f"A role has already ben created for #{oldRoleName} using emote {payloadEmote}, taking no action.",
+            severity='Info'
+        )
         exists = True
 
     # add an emote:roleName to roles collection
@@ -66,10 +83,19 @@ def add_role(guildID, payloadEmote, roleName):
     }
     # add the document
     db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).set(data)
+    user_response = ''
+
     if exists == True:
-        return f'I have updated the rule for emote {payloadEmote}. Ive changed the role from #{oldRoleName} to #{roleName}'
+        user_response = f'Updated the rule for emote {payloadEmote}. The role has been changed from #{oldRoleName} to #{roleName}'
     else:
-        return f'I have created a new rule for the emote {payloadEmote} and role #{roleName}'
+        user_response = f'A new rule has been created for the emote {payloadEmote} and role #{roleName}'
+
+    logger.write_log(
+        env=env,
+        payload=user_response,
+        severity='Info'
+    )
+    return user_response
 
 
 def remove_role(guildID, payloadEmote):
@@ -83,18 +109,27 @@ def remove_role(guildID, payloadEmote):
     doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote)
     doc = doc_ref.get()
     exists = False
-
+    user_response = ''
     if doc.exists:
         doc_json = doc.to_dict()
         RoleName = doc_json['roleName']
         # delete an emote:roleName to roles collection
         db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).delete()
-        return f'The rule for the emote {payloadEmote} and role #{RoleName} has been successfully deleted!'
+        user_response = f'The rule for the emote {payloadEmote} and role #{RoleName} has been successfully deleted!'
+        logger.write_log(
+            env=env,
+            payload=user_response,
+            severity='Info'
+        )
     elif exists == False:
-        return f'No role found for emote {payloadEmote}. Taking no action.'
+        user_response = f'No role found for emote {payloadEmote}. Taking no action.'
+        logger.write_log(
+            env=env,
+            payload=user_response,
+            severity='Info'
+        )
+    return user_response
 
-    
-    return
 
 def show_roles(guildID):
     '''
@@ -105,6 +140,4 @@ def show_roles(guildID):
     doc_list = []
     for doc in docs:
         doc_list.append(doc.to_dict())
-    if not doc_list:
-        print('There are no roles currently set for this server.')
     return doc_list
