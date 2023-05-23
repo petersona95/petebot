@@ -29,7 +29,7 @@ Tip: If you get "port is busy" you need to disable airplay in mac settings. It u
 `docker images`
 
 2). Then copy that image name and run it
-`docker run -e env=dev us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev:latest`
+`docker run -e env=dev -e debug=true us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev:latest`
 - -e sets an environment variable
 
 

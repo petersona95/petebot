@@ -115,7 +115,7 @@ def remove_role(guildID, payloadEmote):
         RoleName = doc_json['roleName']
         # delete an emote:roleName to roles collection
         db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).delete()
-        user_response = f'The rule for the emote {payloadEmote} and role #{RoleName} has been successfully deleted!'
+        user_response = f'Removed rule for the emote {payloadEmote} and role #{RoleName}.'
         logger.write_log(
             action=None,
             payload=user_response,
