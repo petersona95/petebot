@@ -4,6 +4,7 @@ from sys import stdout
 import os
 
 debug = os.getenv('debug') # only print docker logs if debug=True
+env = os.getenv('env')
 
 '''
 Writes logs to google cloud logging with varying severity.
@@ -25,12 +26,13 @@ consoleHandler = logging.StreamHandler(stdout) #set streamhandler to stderr
 consoleHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
 
-def write_log(env, payload, severity):
+def write_log(action, payload, severity):
     try:
         gcp_logger.log_struct(
             {
-                "env": env,
-                "message": payload
+                "env": env
+                ,"action": action
+                ,"message": payload
             }
             ,severity=severity
         )
@@ -42,8 +44,9 @@ def write_log(env, payload, severity):
     except Exception as e:
         gcp_logger.log_struct(
             {
-                "env": env,
-                "message": 'Failed to write log. Error: ' + str(e)
+                "env": env
+                ,"action": action
+                ,"message": 'Failed to write log. Error: ' + str(e)
             }
             ,severity=severity
         )

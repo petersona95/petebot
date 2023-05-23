@@ -31,7 +31,7 @@ def get_messageID(guildID):
         return int(messageID) # its a string in firestore, convert to int to match payload
     else:
         logger.write_log(
-            env=env,
+            action=None,
             payload=f"No messageID exists for guildID: {guildID}. No action was taken.",
             severity='Warning'
         )
@@ -50,7 +50,7 @@ def get_role(guildID, payloadEmote):
         return roleName
     else:
         logger.write_log(
-            env=env,
+            action=None,
             payload=f"No document exists for {payloadEmote}, taking no action.",
             severity='Info'
         )
@@ -70,9 +70,9 @@ def add_role(guildID, payloadEmote, roleName):
         doc_json = doc.to_dict()
         oldRoleName = doc_json['roleName']
         logger.write_log(
-            env=env,
-            payload=f"A role has already ben created for #{oldRoleName} using emote {payloadEmote}, taking no action.",
-            severity='Info'
+            action=None,
+            payload=f"A role has already ben created for #{oldRoleName} using emote {payloadEmote}.",
+            severity='Debug'
         )
         exists = True
 
@@ -91,7 +91,7 @@ def add_role(guildID, payloadEmote, roleName):
         user_response = f'A new rule has been created for the emote {payloadEmote} and role #{roleName}'
 
     logger.write_log(
-        env=env,
+        action=None,
         payload=user_response,
         severity='Info'
     )
@@ -117,16 +117,16 @@ def remove_role(guildID, payloadEmote):
         db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).delete()
         user_response = f'The rule for the emote {payloadEmote} and role #{RoleName} has been successfully deleted!'
         logger.write_log(
-            env=env,
+            action=None,
             payload=user_response,
             severity='Info'
         )
     elif exists == False:
         user_response = f'No role found for emote {payloadEmote}. Taking no action.'
         logger.write_log(
-            env=env,
+            action=None,
             payload=user_response,
-            severity='Info'
+            severity='Debug'
         )
     return user_response
 
