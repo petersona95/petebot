@@ -186,7 +186,7 @@ async def on_raw_reaction_remove(payload):
     await member.remove_roles(discordRoleName)
     logger.write_log(
         env=env,
-        payload=f'Removed role {firestoreRoleName} from user {payload.user_id}.',
+        payload=f'Removed role {firestoreRoleName} from user {payload.member}.',
         severity='Info'
     )
 
