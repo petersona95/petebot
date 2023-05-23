@@ -18,7 +18,7 @@ Currently the bot watches for emotes on a specific message. Upon seeing an emote
 `docker build --build-arg local_build=true -t python-role-bot-dev .`
 
 2. Run the built container locally
-`docker run -p 5000:5000 python-role-bot-dev:latest`
+`docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -e env=dev -p 5000:5000 python-role-bot-dev:latest`
 
 Tip: If you get "port is busy" you need to disable airplay in mac settings. It uses the same port as docker.
 
@@ -29,7 +29,7 @@ Tip: If you get "port is busy" you need to disable airplay in mac settings. It u
 `docker images`
 
 2). Then copy that image name and run it
-`docker run -e env=dev us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev:latest`
+`docker run -e env=dev -e debug=true us-central1-docker.pkg.dev/discord-role-bot-380821/discord-role-bot/discord-role-bot-dev:latest`
 - -e sets an environment variable
 
 
@@ -66,7 +66,7 @@ ex: docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -p 5000:50
 
 ### Environment Variables:
 - You can set environment variables locally with:
-`env=dev python main.py`
+`env=dev debug=true python main.py`
   - Make sure you're running in a python terminal not bash
 
 - When you run your container, you can set them there too:

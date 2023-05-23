@@ -6,6 +6,8 @@ import os # used to define dev/prod token
 # py files
 import gcp_secrets # function to retrieve discord private key from gcp secret manager
 import firestore # used to talk to firestore
+import logger # used to write logs to google log explorer as well as to stdout
+
 
 intents = discord.Intents.default()
 intents.members = True # required for removing roles
@@ -26,7 +28,11 @@ token = gcp_secrets.get_secret_contents(secretName)
 
 @bot.event # decorator
 async def on_ready():
-    print("bot is logged in")
+    logger.write_log(
+        action=None,
+        payload='Bot has logged in.',
+        severity='Debug'
+    )    
     try:
         # syncing is used for /commands
         # Its used to show /command options available for users in discord itself. They're called trees in discord
@@ -39,9 +45,18 @@ async def on_ready():
         synced 2 command(s)
         '''
         synced = await bot.tree.sync()
-        print(f"synced {len(synced)} command(s)")
+        logger.write_log(
+            action=None,
+            payload=f"synced {len(synced)} command(s)",
+            severity='Debug'
+        )
+
     except Exception as e:
-        print(e)
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
 
 # SLASH COMMANDS
 '''
@@ -53,13 +68,31 @@ BUG: Currently using custom emoji's does not work. the interaction receives a we
 @app_commands.describe(emote="Emote used to gain that role")
 @app_commands.describe(role="Name of role in discord")
 async def add_role(interaction: discord.Interaction, emote: str, role: str):
-    # all slash commands require a response otherwise it will error
-    admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
-    if interaction.user.id != int(admin_user_id):
-        await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
-        return
-    response = firestore.add_role(interaction.guild_id, emote, role)
-    await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
+    logger.write_log(
+        action='/add_role',
+        payload=f'User {interaction.user.name} invoked the /add_role command',
+        severity='Debug'
+    )
+    try:
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        if interaction.user.id != int(admin_user_id):
+            await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
+            logger.write_log(
+                action='/add_role',
+                payload=f'User {interaction.user.name} was blocked from using the /add_role command',
+                severity='Debug'
+            )
+            return
+        response = firestore.add_role(interaction.guild_id, emote, role) # attempts to add role. If response returns it was successful
+        await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
+
+    except Exception as e:
+        logger.write_log(
+            action='/add_role',
+            payload=str(e),
+            severity='Error'
+        )
+
 
 '''
 /REMOVE_ROLE:
@@ -70,13 +103,30 @@ If the association doesn't exist in Firestore let the user know.
 @bot.tree.command(name="remove_role", description="Remove role/emote combination for this channel")
 @app_commands.describe(emote="Emote used to gain that role")
 async def remove_role(interaction: discord.Interaction, emote: str):
-    # all slash commands require a response otherwise it will error
-    admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
-    if interaction.user.id != int(admin_user_id):
-        await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
-        return
-    response = firestore.remove_role(interaction.guild_id, emote)
-    await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
+    logger.write_log(
+        action='/remove_role',
+        payload=f'User {interaction.user.name} invoked the /remove_role command',
+        severity='Debug'
+    )
+    try:
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        if interaction.user.id != int(admin_user_id):
+            await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
+            logger.write_log(
+                action='/remove_role',
+                payload=f'User {interaction.user.name} was blocked from using the /remove_role command',
+                severity='Debug'
+            )
+            return
+        response = firestore.remove_role(interaction.guild_id, emote)
+        await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
+    
+    except Exception as e:
+        logger.write_log(
+            action='/remove_role',
+            payload=str(e),
+            severity='Error'
+        )
 
 '''
 !SHOW_ROLES:
@@ -85,18 +135,25 @@ If there are no associations in Firestore let the user know.
 '''
 @bot.command()
 async def show_roles(ctx):
-    role_list = firestore.show_roles(ctx.message.guild.id)
-    # if roles exist
-    if role_list:
-        response = ''
-        for dict in role_list:
-            #for i in dict:
-            response += f'\n {dict["roleEmote"]} | #{dict["roleName"]}'
-        response = f'The following emote/roles are set for this server:{response}'
-    else:
-        response = 'There are currently no emote/roles set for this server. Add one using /add_role.'
-    await ctx.send(f"Hello {ctx.message.author}, {response}")
-
+    try:
+        role_list = firestore.show_roles(ctx.message.guild.id)
+        # if roles exist
+        if role_list:
+            response = ''
+            for dict in role_list:
+                #for i in dict:
+                response += f'\n {dict["roleEmote"]} | #{dict["roleName"]}'
+            response = f'The following emote/roles are set for this server:{response}'
+        else:
+            response = 'There are currently no emote/roles set for this server. Add one using /add_role.'
+        await ctx.send(f"Hello {ctx.message.author}, {response}")
+    
+    except Exception as e:
+        logger.write_log(
+            action='!show_roles',
+            payload=str(e),
+            severity='Error'
+        )
 
 
 # EVENTS
@@ -120,12 +177,22 @@ async def on_raw_reaction_add(payload):
     # do nothing if the reaction does not match a document in firestore
     firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
     if firestoreRoleName == None:
-        print('No Role configured for ' + payload.emoji.name + ', taking no action.')
+        logger.write_log(
+            action='on_raw_reaction_add',
+            payload=f"No Role configured for {payload.emoji.name}, taking no action.",
+            severity='Debug'
+        )
         return
 
     # assign user the roleName
     discordRoleName = discord.utils.get(guild.roles, name=firestoreRoleName)
     await payload.member.add_roles(discordRoleName)
+
+    logger.write_log(
+        action='on_raw_reaction_add',
+        payload=f"User {payload.member} emoted {payload.emoji.name}. Adding role #{firestoreRoleName}.",
+        severity='Info'
+    )
 
 @bot.event
 async def on_raw_reaction_remove(payload):
@@ -144,17 +211,29 @@ async def on_raw_reaction_remove(payload):
         return
 
     # the remove_roles requires a memberid
-    member = guild.get_member(payload.user_id)
+    member_id = guild.get_member(payload.user_id)
+
+    # get the member's name as well
+    member = await guild.fetch_member(payload.user_id)
 
     # look up the associated role in firestore based on the emote from the payload
     # do nothing if the reaction does not match a document in firestore
     firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
     if firestoreRoleName == None:
-        print('No Role configured for ' + payload.emoji.name + ', taking no action.')
+        logger.write_log(
+            action='on_raw_reaction_remove',
+            payload=f'No Role configured for {payload.emoji.name}, taking no action.',
+            severity='Debug'
+        )
         return
 
     # assign user the roleName
     discordRoleName = discord.utils.get(guild.roles, name=firestoreRoleName)
-    await member.remove_roles(discordRoleName)
+    await member_id.remove_roles(discordRoleName)
+    logger.write_log(
+        action='on_raw_reaction_remove',
+        payload=f'User {member} removed emote {payload.emoji.name}. Removing role #{firestoreRoleName}.',
+        severity='Info'
+    )
 
 bot.run(token)
