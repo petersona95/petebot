@@ -9,7 +9,7 @@ env = os.getenv('env')
 '''
 Writes logs to google cloud logging with varying severity.
 Logs are separated by name, all logs will have the same name, discord-role-bot
-also writes logs to stdout and stderr for local debugging and transparency
+also writes logs to stdout for local debugging and transparency
 severity includes INFO, WARNING, ERROR, etc.
 '''
 
