@@ -34,6 +34,7 @@ async def on_ready():
         severity='Debug'
     )    
     try:
+        bot.add_view(Roles())
         # syncing is used for /commands
         # Its used to show /command options available for users in discord itself. They're called trees in discord
         # by not defining a guild_id its considered a global tree. it can take up to 24 hours to refresh on servers
@@ -57,6 +58,27 @@ async def on_ready():
             payload=str(e),
             severity='Error'
         )
+
+
+class Roles(discord.ui.View):
+  def __init__(self):
+    super().__init__(timeout = None)
+  @discord.ui.button(label = "Role 1", custom_id = "Role 1", style = discord.ButtonStyle.secondary)
+  async def button1(self, interaction, button):
+    role = 1110713958396076033
+    user = interaction.user
+    if role in [y.id for y in user.roles]:
+      await user.remove_roles(user.guild.get_role(role))
+      await interaction.response.send_message("You have removed a role!", ephemeral = True)
+    else:
+      await user.add_roles(user.guild.get_role(role))
+      await interaction.response.send_message("You have added a role!", ephemeral = True)
+
+@bot.command()
+async def roles(ctx):
+  embed = discord.Embed(title = "Role Selection Form", description = "Press to add/remove a role.")
+  await ctx.send(embed = embed, view = Roles())
+
 
 # SLASH COMMANDS
 '''
