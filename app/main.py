@@ -269,7 +269,7 @@ async def approve_all(interaction: discord.Interaction, alliance: str):
                 # grant them the role
                 await targetMember.add_roles(allyRole)
                 # update their nickname
-                await targetMember.edit(nick=f'[{allyRole}]{user["travianUsername"]}')
+                await targetMember.edit(nick=f'[{allyRole}] {user["travianUsername"]}')
                 logger.write_log(
                 action='/approve',
                 payload=f'Approved user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
@@ -355,7 +355,7 @@ async def approve(interaction: discord.Interaction, travianacct: str, alliance: 
                     targetMember = interaction.guild.get_member(int(approvedUser['userId']))
                     await targetMember.add_roles(allyRole)
                     # update their nickname
-                    await targetMember.edit(nick=f'[{allyRole}]{user["travianUsername"]}')
+                    await targetMember.edit(nick=f'[{allyRole}] {user["travianUsername"]}')
 
                     logger.write_log(
                     action='/approve',
