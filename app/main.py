@@ -190,6 +190,7 @@ async def alliancehelp(ctx):
     embed.add_field(name='/approve_all [alliance]', value='rather than approve members individually, you can approve all pending users in the queue', inline=False)
     embed.add_field(name='/pending [alliance]', value='shows all pending users in the queue', inline=False)
     embed.add_field(name='/reject [username] [alliance]', value='Rejects a player from joining your alliance. They will be marked as REJECTED and will be unable to join any alliance until this is corrected.', inline=False)
+    await ctx.send(embed=embed)
 
 '''
 Show all pending invites to respective
@@ -236,7 +237,7 @@ async def pending(interaction: discord.Interaction, alliance: str):
             #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
             first_col_heading=True
         )
-        await interaction.response.send_message(f"The following applicants are pending:\n```\n{output}\n```\n use /approve to approve individual members or /approve_all to approve everyone on this list.")
+        await interaction.response.send_message(f"The following applicants are pending:\n```\n{output}\n```\n use /approve and /reject to resolve applications for individual members or /approve_all to approve everyone on this list.")
     except Exception as e:
         logger.write_log(
             action=None,
