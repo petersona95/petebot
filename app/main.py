@@ -190,7 +190,7 @@ async def alliancehelp(ctx):
     embed.add_field(name='/approve_all [alliance]', value='rather than approve members individually, you can approve all pending users in the queue', inline=False)
     embed.add_field(name='/pending [alliance]', value='shows all pending users in the queue', inline=False)
     embed.add_field(name='/reject [username] [alliance]', value='Rejects a player from joining your alliance. They will be marked as REJECTED and will be unable to join any alliance until this is corrected.', inline=False)
-    await ctx.send(embed=embed, view=ViewAllianceSelection())
+
 '''
 Show all pending invites to respective
 '''
