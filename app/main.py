@@ -94,39 +94,69 @@ class ModalApplicationForm(discord.ui.Modal, title='Alliance Application Form'):
     async def on_submit(self, interaction: discord.Interaction):
         logger.write_log(
         action='Application Form',
-        payload=f'User {interaction.user.display_name} applied to {self.roleName}.',
+        payload=f'User {str(interaction.user)} applied to {self.roleName}.',
         severity='Info'
         )
-        # add or update user in firestore
-        newUser = firestore.travianUser(userId=str(interaction.user.id), discordUsername=str(interaction.user), travianUsername=str(self.submittedUN).lower(),allianceRole=str(self.roleName), guildId=interaction.guild_id)
-        status = newUser.add_user()
-        if status == 'Rejected':
-            await interaction.response.send_message(f'<@{interaction.user.id}>, you have already been rejected from joining the coalition. Please contact alliance leadership if you believe this to be a mistake.', ephemeral=True)
-            return      
-        elif status == 'Approved':
-            await interaction.response.send_message(f'<@{interaction.user.id}>, your application to **{self.roleName}** has been denied because you are already a part of an alliance. Please contact leadership if you believe this to be a mistake.', ephemeral=True)
-            return         
-        elif status == 'Duplicate UN':
-            await interaction.response.send_message(f'<@{interaction.user.id}>, your application to **{self.roleName}** has been denied because you chose a Travian username that is already registered with another member. Please contact leadership if you believe this to be a mistake.', ephemeral=True)
-            return                   
-        # give user role in discord
-        role = discord.utils.get(interaction.guild.roles, name='PENDING-NONA')
-        if role not in [y.id for y in interaction.user.roles]: # if user does not have the role already
-            await interaction.user.add_roles(role)
+        try:
+            # add or update user in firestore
+            newUser = firestore.travianUser(userId=str(interaction.user.id), discordUsername=str(interaction.user), travianUsername=str(self.submittedUN).lower(),allianceRole=str(self.roleName), guildId=interaction.guild_id)
+            status = newUser.add_user()
+            if status == 'Rejected':
+                await interaction.response.send_message(f'<@{interaction.user.id}>, you have already been rejected from joining the coalition. Please contact alliance leadership if you believe this to be a mistake.', ephemeral=True)
+                logger.write_log(
+                action='Application Form',
+                payload=f'Firestore record handled successfully for user {str(interaction.user)}.',
+                severity='Debug'
+                )
+                return      
+            elif status == 'Approved':
+                await interaction.response.send_message(f'<@{interaction.user.id}>, your application to **{self.roleName}** has been denied because you are already a part of an alliance. Please contact leadership if you believe this to be a mistake.', ephemeral=True)
+                logger.write_log(
+                action='Application Form',
+                payload=f'Firestore record handled successfully for user {str(interaction.user)}.',
+                severity='Debug'
+                )
+                return         
+            elif status == 'Duplicate UN':
+                await interaction.response.send_message(f'<@{interaction.user.id}>, your application to **{self.roleName}** has been denied because you chose a Travian username that is already registered with another member. Please contact leadership if you believe this to be a mistake.', ephemeral=True)
+                logger.write_log(
+                action='Application Form',
+                payload=f'Firestore record handled successfully for user {str(interaction.user)}. User was marked REJECTED',
+                severity='Debug'
+                )
+                return
+            
+        except Exception as e:
+            logger.write_log(
+                action=None,
+                payload=str(e),
+                severity='Error'
+            )                       
         # alert admin channel
-        channel = discord.utils.get(interaction.guild.channels, name="nona-approvals")
-        embed = discord.Embed(
-            colour=discord.Color.dark_teal(),
-            title='New alliance application. Please approve or reject this applicant with /approve OR /reject'
-            # description=f'Please approve or reject this applicant with /approve OR /reject'
-        )
-        embed.add_field(name='Travian Username', value=str(self.submittedUN).lower(), inline=False)
-        embed.add_field(name='Discord Username', value=f'<@{interaction.user.id}>', inline=False)
-        # send embed to admin channel
-        await channel.send(f'<#{channel.id}>', embed=embed)
-        # send message to applicant
-        await interaction.response.send_message(f'Thank you <@{interaction.user.id}>, your application to **{self.roleName}** as user **{str(self.submittedUN).lower()}** has been submitted to leadership. Please wait to be approved by leadership.', ephemeral=True)        
-
+        try:
+            channel = discord.utils.get(interaction.guild.channels, name=f"{str(self.roleName).lower()}-approvals")
+            embed = discord.Embed(
+                colour=discord.Color.dark_teal(),
+                title='New alliance application. Please approve or reject this applicant with /approve OR /reject'
+                # description=f'Please approve or reject this applicant with /approve OR /reject'
+            )
+            embed.add_field(name='Travian Username', value=str(self.submittedUN).lower(), inline=False)
+            embed.add_field(name='Discord Username', value=f'<@{interaction.user.id}>', inline=False)
+            # send embed to admin channel
+            await channel.send(f'<#{channel.id}>', embed=embed)
+            # send message to applicant
+            await interaction.response.send_message(f'Thank you <@{interaction.user.id}>, your application to **{self.roleName}** as user **{str(self.submittedUN).lower()}** has been submitted. Please wait to be approved by leadership.', ephemeral=True)
+            logger.write_log(
+                action='Application Form',
+                payload=f'Approval message for user {str(interaction.user)} was handled successfully.',
+                severity='Debug'
+                )        
+        except Exception as e:
+            logger.write_log(
+                action=None,
+                payload=str(e),
+                severity='Error'
+            )           
 
 '''
 Have the bot send the alliance pick message
@@ -141,7 +171,7 @@ async def pick_ally(ctx):
     await ctx.send(embed=embed, view=ViewAllianceSelection())
 
 '''
-Have the bot send the alliance pick message
+Show all pending invites to respective
 '''
 @bot.tree.command(name="pending", description="Show pending approvals for a specific alliance")
 @app_commands.describe(alliance="The alliance to filter pending approvals. ex: NONA, WP, etc")
@@ -151,28 +181,44 @@ async def pending(interaction: discord.Interaction, alliance: str):
     payload=f'User {interaction.user} invoked the /approve command for {alliance}.',
     severity='Debug'
     )
-    leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
-    allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    # get leader / ally roles and ensure user has permission to use command
+    try:
+        leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
+        allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to use this command for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
         return
 
-    userList = firestore.get_pending_users(interaction.guild_id, str(alliance).upper())
-    tblBody = []
-    if userList: # check if any records returned
-        for user in userList: # will iterate over one dictionary entry
-            tblBody.append([user['travianUsername'], user['discordUsername'], user['allianceRole']])
-    else:
-        await interaction.response.send_message(f"Hello <@{interaction.user.id}>. There are no pending applicants for <@&{allyRole.id}>.")
-        return
-    output = t2a(
-        header=["TravianUN", "DiscordUN", "Alliance"],
-        body=tblBody,
-        #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
-        first_col_heading=True
-    )
-    await interaction.response.send_message(f"Hello <@{interaction.user.id}>, the following applicants are pending:\n```\n{output}\n```\n use /approve to approve individual members or /approve_all to approve everyone on this list.")
+    # get list of pending users and send as ascii message
+    try:
+        userList = firestore.get_pending_users(interaction.guild_id, str(alliance).upper())
+        tblBody = []
+        if userList: # check if any records returned
+            for user in userList: # will iterate over one dictionary entry
+                tblBody.append([user['travianUsername'], user['discordUsername']])
+        else:
+            await interaction.response.send_message(f"There are no pending applicants for <@&{allyRole.id}>.")
+            return
+        output = t2a(
+            header=["TravianUN", "DiscordUN"],
+            body=tblBody,
+            #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
+            first_col_heading=True
+        )
+        await interaction.response.send_message(f"The following applicants are pending:\n```\n{output}\n```\n use /approve to approve individual members or /approve_all to approve everyone on this list.")
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
 
 '''
 /APPROVE_ALL
@@ -186,60 +232,74 @@ async def approve_all(interaction: discord.Interaction, alliance: str):
     payload=f'User {interaction.user} invoked the /approve_all command for {alliance}.',
     severity='Debug'
     )
-    leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
-    allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
-    # check if command caller has leader role
+    # get leader / ally roles and ensure user has permission to use the command
+    try:
+        leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
+        allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
+        # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
         return
 
-    userList = firestore.approve_all_users(guildId=interaction.guild_id, allianceRole=str(alliance).upper())
-    tblBody = []
-    payloadBody = []
-    # if users exist in firestore
-    if userList: # check if any records returned
-        logger.write_log(
-        action='/approve_all',
-        payload=f'Found pending users with allianceRole: {alliance}.',
-        severity='Debug'
-        )
-        
-        for user in userList: # will iterate over one dictionary entry
-            # body for table response
-            tblBody.append([user['travianUsername'], user['discordUsername'], user['allianceRole']])
-            # body for logging payload
-            payloadBody.append({user['travianUsername'], user['discordUsername']})
-            targetMember = interaction.guild.get_member(int(user['userId']))
-            # grant them the role
-            await targetMember.add_roles(allyRole)
-            # update their nickname
-            await targetMember.edit(nick=f'[{allyRole}]{user["travianUsername"]}')
+    # approve all users who have alliance role and are pending
+    try:
+        userList = firestore.approve_all_users(guildId=interaction.guild_id, allianceRole=str(alliance).upper())
+        tblBody = []
+        payloadBody = []
+        # if users exist in firestore
+        if userList: # check if any records returned
             logger.write_log(
-            action='/approve',
-            payload=f'Approved user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
+            action='/approve_all',
+            payload=f'Found pending users with allianceRole: {alliance}.',
+            severity='Debug'
+            )
+            
+            for user in userList: # will iterate over one dictionary entry
+                # body for table response
+                tblBody.append([user['travianUsername'], user['discordUsername']])
+                # body for logging payload
+                payloadBody.append({user['travianUsername'], user['discordUsername']})
+                targetMember = interaction.guild.get_member(int(user['userId']))
+                # grant them the role
+                await targetMember.add_roles(allyRole)
+                # update their nickname
+                await targetMember.edit(nick=f'[{allyRole}]{user["travianUsername"]}')
+                logger.write_log(
+                action='/approve',
+                payload=f'Approved user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
+                severity='Info'
+                )
+            output = t2a(
+                header=["TravianUN", "DiscordUN"],
+                body=tblBody,
+                #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
+                first_col_heading=True
+            )
+            await interaction.response.send_message(f"The following members have been successfully approved:\n```\n{output}\n```")
+            logger.write_log(
+            action='/approve_all',
+            payload=f'Approved multiple users: {payloadBody}',
             severity='Info'
             )
-        output = t2a(
-            header=["TravianUN", "DiscordUN", "Alliance"],
-            body=tblBody,
-            #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
-            first_col_heading=True
-        )
-        await interaction.response.send_message(f"Hi <@{interaction.user.id}>, I have approved the following members:\n```\n{output}\n```")
+        else:
+            await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I could not find any pending approvals for <@&{allyRole.id}>. They may have already been approved. If you believe this is an error please contact admin.")
+            logger.write_log(
+            action='/approve_all',
+            payload=f'User was not approved because a pending user was not found.',
+            severity='Debug'
+            )
+    except Exception as e:
         logger.write_log(
-        action='/approve_all',
-        payload=f'Approved multiple users: {payloadBody}',
-        severity='Info'
+            action=None,
+            payload=str(e),
+            severity='Error'
         )
-    else:
-        await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I could not find any pending approvals for <@&{allyRole.id}>. They may have already been approved. If you believe this is an error please contact admin.")
-        logger.write_log(
-        action='/approve_all',
-        payload=f'User was not approved because a pending user was not found.',
-        severity='Debug'
-        )
-
-
 
 '''
 /APPROVE [player]
@@ -254,52 +314,68 @@ async def approve(interaction: discord.Interaction, travianacct: str, alliance: 
     payload=f'User {interaction.user} invoked the /approve command for {travianacct} and role {alliance}.',
     severity='Debug'
     )
-    leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
-    allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    # get leader / ally role and determine if users have permission to use command
+    try:
+        leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
+        allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
         return
 
-    user = firestore.check_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
-    # if user exists in firestore
-    if user:
-        logger.write_log(
-        action='/approve',
-        payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}.',
-        severity='Debug'
-        )
-        # if user has the role you're approving
-        if user['allianceRole'] == str(alliance).upper(): # if user 
-            # update the user in Firestore
-            approvedUser = firestore.approve_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
+    # get user in firestore database and mark them as approved = true
+    try:
+        user = firestore.check_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
+        # if user exists in firestore
+        if user:
+            logger.write_log(
+            action='/approve',
+            payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}.',
+            severity='Debug'
+            )
+            # if user has the role you're approving
+            if user['allianceRole'] == str(alliance).upper(): # if user 
+                # update the user in Firestore
+                approvedUser = firestore.approve_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
 
-            # grant role to user
-            if approvedUser:
-                logger.write_log(
-                action='/approve',
-                payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}. who has not been approved',
-                severity='Debug'
-                )
-                # get the user based on their ID. Grant the user that role
-                targetMember = interaction.guild.get_member(int(approvedUser['userId']))
-                await targetMember.add_roles(allyRole)
-                # update their nickname
-                await targetMember.edit(nick=f'[{allyRole}]{user["travianUsername"]}')
+                # grant role to user
+                if approvedUser:
+                    logger.write_log(
+                    action='/approve',
+                    payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}. who has not been approved',
+                    severity='Debug'
+                    )
+                    # get the user based on their ID. Grant the user that role
+                    targetMember = interaction.guild.get_member(int(approvedUser['userId']))
+                    await targetMember.add_roles(allyRole)
+                    # update their nickname
+                    await targetMember.edit(nick=f'[{allyRole}]{user["travianUsername"]}')
 
-                logger.write_log(
-                action='/approve',
-                payload=f'Approved user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
-                severity='Info'
-                )
-                await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I've successfully approved **{travianacct}** to alliance <@&{allyRole.id}>.")
-                return
-    else:
-        await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I could not find a pending approval for **{travianacct}**. They may have already been approved. If you believe this is an error please contact admin.")
+                    logger.write_log(
+                    action='/approve',
+                    payload=f'Approved user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
+                    severity='Info'
+                    )
+                    await interaction.response.send_message(f"User **{travianacct}** has been approved to join alliance.")
+                    return
+        else:
+            await interaction.response.send_message(f"There are no pending approvals for **{travianacct}**. They may have already been approved. If you believe this is an error please contact admin.")
+            logger.write_log(
+            action='/approve',
+            payload=f'User was not approved because a pending user was not found.',
+            severity='Debug'
+            )
+    except Exception as e:
         logger.write_log(
-        action='/approve',
-        payload=f'User was not approved because a pending user was not found.',
-        severity='Debug'
+            action=None,
+            payload=str(e),
+            severity='Error'
         )
 
 '''
@@ -314,49 +390,64 @@ async def reject(interaction: discord.Interaction, travianacct: str, alliance: s
     payload=f'User {interaction.user} invoked the /reject command for {travianacct}',
     severity='Debug'
     )
-    leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
-    allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    # determine if user has permission to use command
+    try:
+        leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance).upper())
+        allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance).upper())
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to reject users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
         return
-    
-    user = firestore.check_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
-    # if user exists in firestore
-    if user:
-        logger.write_log(
-        action='/reject',
-        payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}.',
-        severity='Debug'
-        )
-        # if user has the role you're approving
-        if user['allianceRole'] == str(alliance).upper(): # if user 
-            # update the user in Firestore
-            rejectedUser = firestore.reject_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
-            if rejectedUser:
-                logger.write_log(
-                action='/reject',
-                payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}. who has not been approved/rejected',
-                severity='Debug'
-                )
-                # get the user based on their ID. Grant the user that role
-                targetMember = interaction.guild.get_member(int(rejectedUser['userId']))
-                await targetMember.send(f'You have been rejected from joining {allyRole} by leadership. You have also been blocked from applying to other alliances. If you believe this is a mistake please contact leadership.\n*This is an automated message. Do not respond as it will not be read.*')
-                logger.write_log(
-                action='/reject',
-                payload=f'Rejected user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
-                severity='Info'
-                )
-                await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I've successfully rejected **{travianacct}** to alliance <@&{allyRole.id}>. They are now blocked from joining any alliance. If this needs to be corrected please contact admin.")
-                return
-    else:
-        await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I could not find a pending approval for **{travianacct}**. They may have already been approved. If you believe this is an error please contact admin.")
-        logger.write_log(
-        action='/reject',
-        payload=f'User was not approved because a pending user was not found.',
-        severity='Debug'
-        )
 
+    # find user in firestore, mark them as rejected
+    try:
+        user = firestore.check_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
+        # if user exists in firestore
+        if user:
+            logger.write_log(
+            action='/reject',
+            payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}.',
+            severity='Debug'
+            )
+            # if user has the role you're approving
+            if user['allianceRole'] == str(alliance).upper(): # if user 
+                # update the user in Firestore
+                rejectedUser = firestore.reject_user(travianUsername=str(travianacct).lower(), guildId=interaction.guild_id)
+                if rejectedUser:
+                    logger.write_log(
+                    action='/reject',
+                    payload=f'Found user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]}. who has not been approved/rejected',
+                    severity='Debug'
+                    )
+                    # get the user based on their ID. Grant the user that role
+                    targetMember = interaction.guild.get_member(int(rejectedUser['userId']))
+                    await targetMember.send(f'You have been rejected from joining {allyRole} by leadership. You have also been blocked from applying to other alliances. If you believe this is a mistake please contact leadership.\n*This is an automated message. Do not respond as it will not be read.*')
+                    logger.write_log(
+                    action='/reject',
+                    payload=f'Rejected user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance}',
+                    severity='Info'
+                    )
+                    await interaction.response.send_message(f"User **{travianacct}** has been successfully rejected from joining the coalition. They are now blocked from joining any alliance. If this needs to be corrected please contact admin.")
+                    return
+        else:
+            await interaction.response.send_message(f"There are no pending approvals for **{travianacct}**. They may have already been approved. If you believe this is an error please contact admin.")
+            logger.write_log(
+            action='/reject',
+            payload=f'User was not approved because a pending user was not found.',
+            severity='Debug'
+            )
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
 
 # SLASH COMMANDS
 '''
