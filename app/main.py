@@ -131,7 +131,11 @@ class ModalApplicationForm(discord.ui.Modal, title='Alliance Application Form'):
                 action=None,
                 payload=str(e),
                 severity='Error'
-            )                       
+            )
+            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+            adminUser = interaction.guild.get_member(int(admin_user_id))
+            await adminUser.send(f'An error occured in petebot: {e}')
+                       
         # alert admin channel
         try:
             channel = discord.utils.get(interaction.guild.channels, name=f"{str(self.roleName).lower()}-approvals")
@@ -156,7 +160,10 @@ class ModalApplicationForm(discord.ui.Modal, title='Alliance Application Form'):
                 action=None,
                 payload=str(e),
                 severity='Error'
-            )           
+            )
+            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+            adminUser = interaction.guild.get_member(int(admin_user_id))
+            await adminUser.send(f'An error occured in petebot: {e}')           
 
 '''
 Have the bot send the alliance pick message
@@ -169,6 +176,20 @@ async def pick_ally(ctx):
         description='Press a button below to join your alliance.'
     )
     await ctx.send(embed=embed, view=ViewAllianceSelection())
+
+'''
+help commands
+'''
+@bot.command()
+async def alliancehelp(ctx):
+    embed = discord.Embed(
+        colour=discord.Color.dark_teal(),
+        title='The following commands are available to you',
+    )
+    embed.add_field(name='/approve [username] [alliance]', value='Used to approve an applicant to your alliance', inline=False)
+    embed.add_field(name='/approve_all [alliance]', value='rather than approve members individually, you can approve all pending users in the queue', inline=False)
+    embed.add_field(name='/pending [alliance]', value='shows all pending users in the queue', inline=False)
+    embed.add_field(name='/reject [username] [alliance]', value='Rejects a player from joining your alliance. They will be marked as REJECTED and will be unable to join any alliance until this is corrected.', inline=False)
 
 '''
 Show all pending invites to respective
@@ -191,6 +212,9 @@ async def pending(interaction: discord.Interaction, alliance: str):
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to use this command for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -219,6 +243,9 @@ async def pending(interaction: discord.Interaction, alliance: str):
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
 
 '''
 /APPROVE_ALL
@@ -242,6 +269,9 @@ async def approve_all(interaction: discord.Interaction, alliance: str):
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
         # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -300,6 +330,9 @@ async def approve_all(interaction: discord.Interaction, alliance: str):
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
 
 '''
 /APPROVE [player]
@@ -324,6 +357,9 @@ async def approve(interaction: discord.Interaction, travianacct: str, alliance: 
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -377,6 +413,9 @@ async def approve(interaction: discord.Interaction, travianacct: str, alliance: 
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
 
 '''
 /REJECT [player]
@@ -400,6 +439,9 @@ async def reject(interaction: discord.Interaction, travianacct: str, alliance: s
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to reject users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -448,6 +490,9 @@ async def reject(interaction: discord.Interaction, travianacct: str, alliance: s
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')
 
 # SLASH COMMANDS
 '''
