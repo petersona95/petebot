@@ -141,7 +141,7 @@ languageDict = {
 def translate_text(text, target):
     translate_client = translate.Client()
     # example response: {'translatedText': 'おはようございます、私の名前はXです。', 'detectedSourceLanguage': 'en', 'input': 'Good Morning, My Name is X.'}
-    response = translate_client.translate(text, target_language=target)
+    response = translate_client.translate(text, target_language=target, format_='text')
     return {
         'detectedSourceLanguage': languageDict[response['detectedSourceLanguage']],
         'detectedSourceLanguageISO639': response['detectedSourceLanguage'],
