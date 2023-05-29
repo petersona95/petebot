@@ -573,6 +573,9 @@ async def translate(interaction: discord.Interaction, text: str, target_language
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot: {e}')    
 
 '''
 /ADD_ROLE:
