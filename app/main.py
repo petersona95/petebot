@@ -542,6 +542,7 @@ Given input text and target language, translate text from the google translation
         app_commands.Choice(name="Portuguese", value="pt"),
         app_commands.Choice(name="Romanian", value="ro"),
         app_commands.Choice(name="Russian", value="ru"),
+        app_commands.Choice(name="Serbian", value="sr"),
         app_commands.Choice(name="Spanish", value="es"),
         app_commands.Choice(name="Turkish", value="tr"),
         app_commands.Choice(name="Ukranian", value="uk")
@@ -597,6 +598,7 @@ Given input text and target language, translate text from the google translation
         app_commands.Choice(name="Portuguese", value="pt"),
         app_commands.Choice(name="Romanian", value="ro"),
         app_commands.Choice(name="Russian", value="ru"),
+        app_commands.Choice(name="Serbian", value="sr"),
         app_commands.Choice(name="Spanish", value="es"),
         app_commands.Choice(name="Turkish", value="tr"),
         app_commands.Choice(name="Ukranian", value="uk")
