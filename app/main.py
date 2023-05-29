@@ -591,15 +591,23 @@ Given input text and target language, translate text from the google translation
 @app_commands.choices(target_language=[
         app_commands.Choice(name="Arabic", value="ar"),
         app_commands.Choice(name="Bosnian", value="bs"),
+        app_commands.Choice(name="Croatian", value="hr"),
         app_commands.Choice(name="English", value="en"),
         app_commands.Choice(name="German", value="de"),
         app_commands.Choice(name="Finnish", value="fi"),
         app_commands.Choice(name="Italian", value="it"),
+        app_commands.Choice(name="Japanese", value="ja"),
+        app_commands.Choice(name="Korean", value="ko"),
+        app_commands.Choice(name="Lithuanian", value="lt"),
+        app_commands.Choice(name="Macedonian", value="mk"),
+        app_commands.Choice(name="Polish", value="pl"),
         app_commands.Choice(name="Portuguese", value="pt"),
         app_commands.Choice(name="Romanian", value="ro"),
         app_commands.Choice(name="Russian", value="ru"),
         app_commands.Choice(name="Serbian", value="sr"),
+        app_commands.Choice(name="Slovenian", value="sl"),
         app_commands.Choice(name="Spanish", value="es"),
+        app_commands.Choice(name="Swedish", value="sv"),
         app_commands.Choice(name="Turkish", value="tr"),
         app_commands.Choice(name="Ukranian", value="uk")
         ])
