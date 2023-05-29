@@ -1,4 +1,4 @@
-import discord
+import discord, asyncio
 from discord import app_commands
 from discord.ext import commands
 from discord import ui # modals
@@ -135,7 +135,7 @@ class ModalApplicationForm(discord.ui.Modal, title='Alliance Application Form'):
             )
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
             adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot: {e}')
+            await adminUser.send(f'An error occured in petebot; modalForm; {e}')
                        
         # alert admin channel
         try:
@@ -164,7 +164,7 @@ class ModalApplicationForm(discord.ui.Modal, title='Alliance Application Form'):
             )
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
             adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot: {e}')           
+            await adminUser.send(f'An error occured in petebot; modalForm; {e}')           
 
 '''
 Have the bot send the alliance pick message
@@ -222,7 +222,7 @@ async def pending(interaction: discord.Interaction, alliance: app_commands.Choic
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /pending; {e}')
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to use this command for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -253,7 +253,7 @@ async def pending(interaction: discord.Interaction, alliance: app_commands.Choic
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /pending; {e}')
 
 '''
 /APPROVE_ALL
@@ -285,7 +285,7 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /approve_all; {e}')
         # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -346,7 +346,7 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /approve_all; {e}')
 
 '''
 /APPROVE [player]
@@ -379,7 +379,7 @@ async def approve(interaction: discord.Interaction, travianacct: str, alliance: 
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /approve; {e}')
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -437,7 +437,7 @@ async def approve(interaction: discord.Interaction, travianacct: str, alliance: 
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /approve; {e}')
 
 '''
 /REJECT [player]
@@ -470,7 +470,7 @@ async def reject(interaction: discord.Interaction, travianacct: str, alliance: a
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /reject; {e}')
     # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
         await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to reject users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
@@ -523,14 +523,14 @@ async def reject(interaction: discord.Interaction, travianacct: str, alliance: a
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')
+        await adminUser.send(f'An error occured in petebot; command /reject; {e}')
 
 # SLASH COMMANDS
 '''
 /TRANSLATE
 Given input text and target language, translate text from the google translation API
 '''
-@bot.tree.command(name="translate", description="Translate input text to a specific language")
+@bot.tree.command(name="translate", description="Translate input text to a specific language. Replies with english / translated language.")
 @app_commands.describe(text="Text to translate")
 @app_commands.choices(target_language=[
         app_commands.Choice(name="Arabic", value="ar"),
@@ -552,6 +552,10 @@ async def translate(interaction: discord.Interaction, text: str, target_language
         payload=f'User {interaction.user.name} invoked the /translate command',
         severity='Debug'
     )
+    # message can take longer than 3 second timeout. defer for 5 seconds
+    await interaction.response.defer()
+    # await asyncio.sleep(4) # Doing stuff
+ 
     try:
         translateDict = gcp_translate.translate_text(text, target_language.value)
         '''
@@ -561,11 +565,11 @@ async def translate(interaction: discord.Interaction, text: str, target_language
         '''
         # if detected language is english
         if translateDict['detectedSourceLanguageISO639'] == 'en':
-            await interaction.response.send_message(f"English: {text}\n{target_language.name}: {translateDict['translatedText']}")
+            await interaction.followup.send(f"English: {text}\n{target_language.name}: {translateDict['translatedText']}")
         elif target_language.value == 'en':
-            await interaction.response.send_message(f"English: {translateDict['translatedText']}\n{translateDict['detectedSourceLanguage']}: {text}")
+            await interaction.followup.send(f"English: {translateDict['translatedText']}\n{translateDict['detectedSourceLanguage']}: {text}")
         else:
-            await interaction.response.send_message(f"{translateDict['detectedSourceLanguage']}: {text}\n{target_language.name}: {translateDict['translatedText']}")
+            await interaction.followup.send(f"{translateDict['detectedSourceLanguage']}: {text}\n{target_language.name}: {translateDict['translatedText']}")
 
     except Exception as e:
         logger.write_log(
@@ -575,7 +579,53 @@ async def translate(interaction: discord.Interaction, text: str, target_language
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot: {e}')    
+        await adminUser.send(f'An error occured in petebot; command /translate; {e}')    
+
+'''
+/TRANSLATETHIS
+Given input text and target language, translate text from the google translation API
+'''
+@bot.tree.command(name="translate_this", description="Translate input text to a specific language. Send the translation in a private message.")
+@app_commands.describe(text="Text to translate")
+@app_commands.choices(target_language=[
+        app_commands.Choice(name="Arabic", value="ar"),
+        app_commands.Choice(name="Bosnian", value="bs"),
+        app_commands.Choice(name="English", value="en"),
+        app_commands.Choice(name="German", value="de"),
+        app_commands.Choice(name="Finnish", value="fi"),
+        app_commands.Choice(name="Italian", value="it"),
+        app_commands.Choice(name="Portuguese", value="pt"),
+        app_commands.Choice(name="Romanian", value="ro"),
+        app_commands.Choice(name="Russian", value="ru"),
+        app_commands.Choice(name="Spanish", value="es"),
+        app_commands.Choice(name="Turkish", value="tr"),
+        app_commands.Choice(name="Ukranian", value="uk")
+        ])
+async def translate_this(interaction: discord.Interaction, text: str, target_language: app_commands.Choice[str]):
+    logger.write_log(
+        action='/translate_this',
+        payload=f'User {interaction.user.name} invoked the /translate command',
+        severity='Debug'
+    )
+    # message can take longer than 3 second timeout. defer for 5 seconds
+    await interaction.response.defer(ephemeral=True)
+    # await asyncio.sleep(4) # Doing stuff
+
+    try:
+        translateDict = gcp_translate.translate_text(text, target_language.value)
+
+        await interaction.followup.send(f"Detected Language: {translateDict['detectedSourceLanguage']}\n{target_language.name}: {translateDict['translatedText']}" , ephemeral=True)
+
+    except Exception as e:
+        logger.write_log(
+            action='/translate',
+            payload=str(e),
+            severity='Error'
+        )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot; command /translate_this; {e}')    
+
 
 '''
 /ADD_ROLE:
@@ -594,7 +644,7 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
     try:
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         if interaction.user.id != int(admin_user_id):
-            await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
+            await interaction.response.send_message(f"{interaction.user.name}, you do not have permission to use this command.", ephemeral=True)
             logger.write_log(
                 action='/add_role',
                 payload=f'User {interaction.user.name} was blocked from using the /add_role command',
@@ -629,7 +679,7 @@ async def remove_role(interaction: discord.Interaction, emote: str):
     try:
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         if interaction.user.id != int(admin_user_id):
-            await interaction.response.send_message(f"Nice try {interaction.user.name}... Only peteeee has the power to harness petebot 😈")
+            await interaction.response.send_message(f"{interaction.user.name}, you do not have permission to use this command.", ephemeral=True)
             logger.write_log(
                 action='/remove_role',
                 payload=f'User {interaction.user.name} was blocked from using the /remove_role command',
