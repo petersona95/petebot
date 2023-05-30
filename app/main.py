@@ -230,21 +230,22 @@ async def pending(interaction: discord.Interaction, alliance: app_commands.Choic
 
     # get list of pending users and send as ascii message
     try:
+        embed = discord.Embed(
+            colour=discord.Color.dark_teal(),
+            title='The following applicants are pending',
+            description='use /approve and /reject to resolve applications for individual members or /approve_all to approve everyone on this list.'
+        )
+        output = ''
         userList = firestore.get_pending_users(interaction.guild_id, str(alliance.value).upper())
-        tblBody = []
         if userList: # check if any records returned
             for user in userList: # will iterate over one dictionary entry
-                tblBody.append([user['travianUsername'], user['discordUsername']])
+                output+= f"- **{user['travianUsername']}** | {user['discordUsername']}\n"
         else:
             await interaction.response.send_message(f"There are no pending applicants for <@&{allyRole.id}>.")
             return
-        output = t2a(
-            header=["TravianUN", "DiscordUN"],
-            body=tblBody,
-            #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
-            first_col_heading=True
-        )
-        await interaction.response.send_message(f"The following applicants are pending:\n```\n{output}\n```\n use /approve and /reject to resolve applications for individual members or /approve_all to approve everyone on this list.")
+ 
+        embed.add_field(name='Players', value=output, inline=False)
+        await interaction.response.send_message(embed=embed)
     except Exception as e:
         logger.write_log(
             action=None,
@@ -273,8 +274,12 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
     payload=f'User {interaction.user} invoked the /approve_all command for {alliance.value}.',
     severity='Debug'
     )
+
     # get leader / ally roles and ensure user has permission to use the command
     try:
+        # message can take longer than 3 second timeout. defer
+        await interaction.response.defer()
+
         leaderRole = discord.utils.get(interaction.guild.roles, name='LEADER-'+str(alliance.value).upper())
         allyRole = discord.utils.get(interaction.guild.roles, name=str(alliance.value).upper())
     except Exception as e:
@@ -286,16 +291,23 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
         await adminUser.send(f'An error occured in petebot; command /approve_all; {e}')
+        # end deferral of user on error
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.")
         # check if command caller has leader role
     if leaderRole.id not in [y.id for y in interaction.user.roles]:
-        await interaction.response.send_message(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. You do not have permission to approve users for <@&{allyRole.id}>. If you believe this is an error please contact admin.")
         return
 
     # approve all users who have alliance role and are pending
     try:
-        userList = firestore.approve_all_users(guildId=interaction.guild_id, allianceRole=str(alliance.value).upper())
-        tblBody = []
+        embed = discord.Embed(
+            colour=discord.Color.dark_teal(),
+            title='The following members have been successfully approved:'
+        )
+        output = ''
         payloadBody = []
+        userList = firestore.approve_all_users(guildId=interaction.guild_id, allianceRole=str(alliance.value).upper())
+
         # if users exist in firestore
         if userList: # check if any records returned
             logger.write_log(
@@ -306,7 +318,7 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
             
             for user in userList: # will iterate over one dictionary entry
                 # body for table response
-                tblBody.append([user['travianUsername'], user['discordUsername']])
+                output+= f"- **{user['travianUsername']}** | {user['discordUsername']}\n"
                 # body for logging payload
                 payloadBody.append({user['travianUsername'], user['discordUsername']})
                 targetMember = interaction.guild.get_member(int(user['userId']))
@@ -319,20 +331,15 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
                 payload=f'Approved user with discordUsername: {user["discordUsername"]} and Travian UN: {user["travianUsername"]} to alliance: {alliance.value}',
                 severity='Info'
                 )
-            output = t2a(
-                header=["TravianUN", "DiscordUN"],
-                body=tblBody,
-                #body=[[1, 'Team A', 2, 4, 6], [2, 'Team B', 3, 3, 6], [3, 'Team C', 4, 2, 6]],
-                first_col_heading=True
-            )
-            await interaction.response.send_message(f"The following members have been successfully approved:\n```\n{output}\n```")
+            embed.add_field(name='Players', value=output)
+            await interaction.followup.send(embed=embed)
             logger.write_log(
             action='/approve_all',
             payload=f'Approved multiple users: {payloadBody}',
             severity='Info'
             )
         else:
-            await interaction.response.send_message(f"Hello <@{interaction.user.id}>. I could not find any pending approvals for <@&{allyRole.id}>. They may have already been approved. If you believe this is an error please contact admin.")
+            await interaction.followup.send(f"Hello <@{interaction.user.id}>. I could not find any pending approvals for <@&{allyRole.id}>. They may have already been approved. If you believe this is an error please contact admin.")
             logger.write_log(
             action='/approve_all',
             payload=f'User was not approved because a pending user was not found.',
@@ -347,6 +354,8 @@ async def approve_all(interaction: discord.Interaction, alliance: app_commands.C
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
         await adminUser.send(f'An error occured in petebot; command /approve_all; {e}')
+        # end deferral of user on error
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.")
 
 '''
 /APPROVE [player]
@@ -553,9 +562,8 @@ async def translate(interaction: discord.Interaction, text: str, target_language
         payload=f'User {interaction.user.name} invoked the /translate command',
         severity='Debug'
     )
-    # message can take longer than 3 second timeout. defer for 5 seconds
+    # message can take longer than 3 second timeout. defer
     await interaction.response.defer()
-    # await asyncio.sleep(4) # Doing stuff
  
     try:
         translateDict = gcp_translate.translate_text(text, target_language.value)
@@ -580,7 +588,8 @@ async def translate(interaction: discord.Interaction, text: str, target_language
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot; command /translate; {e}')    
+        await adminUser.send(f'An error occured in petebot; command /translate; {e}')
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.")    
 
 '''
 /TRANSLATETHIS
@@ -624,7 +633,7 @@ async def translate_this(interaction: discord.Interaction, text: str, target_lan
     try:
         translateDict = gcp_translate.translate_text(text, target_language.value)
 
-        await interaction.followup.send(f"Detected Language: {translateDict['detectedSourceLanguage']}\n{target_language.name}: {translateDict['translatedText']}" , ephemeral=True)
+        await interaction.followup.send(f"Detected Language: {translateDict['detectedSourceLanguage']}\n{target_language.name}: {translateDict['translatedText']}", ephemeral=True)
 
     except Exception as e:
         logger.write_log(
@@ -634,7 +643,8 @@ async def translate_this(interaction: discord.Interaction, text: str, target_lan
         )
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         adminUser = interaction.guild.get_member(int(admin_user_id))
-        await adminUser.send(f'An error occured in petebot; command /translate_this; {e}')    
+        await adminUser.send(f'An error occured in petebot; command /translate_this; {e}')
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)    
 
 
 '''
