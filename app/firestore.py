@@ -17,22 +17,38 @@ cred = credentials.ApplicationDefault()
 app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+def set_messageID(guildID, messageID, channelID):
+    '''
+    Set the value for a messageID in firestore. Will also create the feature for roleSelect in a channel
+    '''
+    # otherwise add user to collection
+    data = {
+        u'enabled': 'true',
+        u'messageID': messageID,
+        u'channelID': channelID
+    }
+    # add the document
+    db.collection(u'servers').document(str(guildID)).collection(u'features').document(u'roleSelect').set(data)
+
 
 def get_messageID(guildID):
     '''
     Look up document based on GuildID. Return the messageID saved for that server.
     '''
-    doc_ref = db.collection(u'servers').document(str(guildID))
+    doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'features').document('roleSelect')
     doc = doc_ref.get()
 
     if doc.exists:
         doc_json = doc.to_dict()
-        messageID = doc_json['messageID']
-        return int(messageID) # its a string in firestore, convert to int to match payload
+        response = {
+            'messageID' : int(doc_json['messageID']),
+            'channelID' : int(doc_json['channelID'])
+        }
+        return response # its a string in firestore, convert to int to match payload}
     else:
         logger.write_log(
             action=None,
-            payload=f"No messageID exists for guildID: {guildID}. No action was taken.",
+            payload=f"The roleSelect feature was not found. No action was taken.",
             severity='Warning'
         )
 
@@ -62,7 +78,7 @@ def add_role(guildID, payloadEmote, roleName):
     if a document for the emote already exists, it will be overwritten
     '''
     # check if the emote already exists
-    doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote)
+    doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'features').document('roleSelect').collection(u'roles').document(payloadEmote)
     doc = doc_ref.get()
     exists = False
 
@@ -82,7 +98,7 @@ def add_role(guildID, payloadEmote, roleName):
         u'roleEmote': payloadEmote
     }
     # add the document
-    db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).set(data)
+    db.collection(u'servers').document(str(guildID)).collection(u'features').document('roleSelect').collection(u'roles').document(payloadEmote).set(data)
     user_response = ''
 
     if exists == True:

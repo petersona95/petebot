@@ -2,10 +2,7 @@ import discord, asyncio
 from discord import app_commands
 from discord.ext import commands
 from discord import ui # modals
-from table2ascii import table2ascii as t2a, PresetStyle
 import os
-
-from discord.interactions import Interaction # used to define dev/prod token
 
 # py files
 import gcp_secrets # function to retrieve discord private key from gcp secret manager
@@ -192,6 +189,43 @@ async def alliancehelp(ctx):
     embed.add_field(name='/pending [alliance]', value='shows all pending users in the queue', inline=False)
     embed.add_field(name='/reject [username] [alliance]', value='Rejects a player from joining your alliance. They will be marked as REJECTED and will be unable to join any alliance until this is corrected.', inline=False)
     await ctx.send(embed=embed)
+
+'''
+Create a new SELECT ROLE message.
+'''
+@bot.tree.command(name="set_role_message", description="Create a message in the current channel for role selection.")
+@app_commands.describe(title="What is the title of your welcome message? ex: Welcome to my channel! Please select a role from the options below.")
+
+async def set_role_message(interaction: discord.Interaction, title: str):
+    logger.write_log(
+    action='/set_role_message',
+    payload=f'User {interaction.user} invoked the /set_title_message command.',
+    severity='Debug'
+    )
+    # create an initial embed as a base point
+    try:
+        embed = discord.Embed(
+            colour=discord.Color.dark_teal(),
+            title=title,
+            description='Use /add_role to add new role|emote combinations in your channel. You can only have one role selection message active at a time, so using /set_role_message again will replace this message.'
+            # initial embed will tell the user to add new roles       
+            )
+        await interaction.response.send_message(embed=embed)
+        # get the messageID for this role_message
+        messageID = await interaction.original_response()
+        # add messageID to firestore
+        firestore.set_messageID(interaction.guild_id, messageID, interaction.channel_id)
+
+    except Exception as e:
+        logger.write_log(
+            action=None,
+            payload=str(e),
+            severity='Error'
+        )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot; command /set_role_message; channel {interaction.channel_id}; {e}')
+
 
 '''
 Show all pending invites to respective
@@ -652,15 +686,32 @@ async def translate_this(interaction: discord.Interaction, text: str, target_lan
 Ask user for emote/role. Create a new record for that association in Firestore
 BUG: Currently using custom emoji's does not work. the interaction receives a weird format for the emoji <yup:serverid?> but the assign roles sees :yup:
 '''
-@bot.tree.command(name="add_role", description="Create a new role/emote combination for this channel")
+@bot.tree.command(name="add_role", description="Create a new role/emote combination for this channel. Update the role selection message with this role/emote combination.")
 @app_commands.describe(emote="Emote used to gain that role")
-@app_commands.describe(role="Name of role in discord")
+@app_commands.describe(role="Name of role in discord (role will be created if it does not exist)")
 async def add_role(interaction: discord.Interaction, emote: str, role: str):
     logger.write_log(
         action='/add_role',
         payload=f'User {interaction.user.name} invoked the /add_role command',
         severity='Debug'
     )
+    # check if a messageID has been defined for this server
+    # if a messageID has not been defined in the database
+    messageDict = firestore.get_messageID
+    if messageDict:
+        try:
+            channel = bot.get_channel(messageDict['channelID'])
+            await channel.fetch_message(messageDict['messageID'])
+        except discord.error.NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
+            await interaction.response.send_message(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
+
+    # check if a discord role exists. if it does not, create one
+    try:
+        discord.utils.get(interaction.guild.roles, name="Supporter")
+    except discord.error.NotFound: #if a NotFound error appears, the role either not in this channel or deleted. Create it
+        await interaction.guild.create_role(name=role)
+
+    # update firestore
     try:
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         if interaction.user.id != int(admin_user_id):
@@ -680,6 +731,8 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
             payload=str(e),
             severity='Error'
         )
+
+    # add an emote to the role message
 
 
 '''
