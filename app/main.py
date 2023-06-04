@@ -212,9 +212,9 @@ async def set_role_message(interaction: discord.Interaction, title: str):
             )
         await interaction.response.send_message(embed=embed)
         # get the messageID for this role_message
-        messageID = await interaction.original_response()
+        message = await interaction.original_response()
         # add messageID to firestore
-        firestore.set_messageID(interaction.guild_id, messageID, interaction.channel_id)
+        firestore.set_role_message(interaction.guild_id, message.id, interaction.channel_id, title)
 
     except Exception as e:
         logger.write_log(
@@ -686,7 +686,7 @@ async def translate_this(interaction: discord.Interaction, text: str, target_lan
 Ask user for emote/role. Create a new record for that association in Firestore
 BUG: Currently using custom emoji's does not work. the interaction receives a weird format for the emoji <yup:serverid?> but the assign roles sees :yup:
 '''
-@bot.tree.command(name="add_role", description="Create a new role/emote combination for this channel. Update the role selection message with this role/emote combination.")
+@bot.tree.command(name="add_role", description="Create a new role/emote combination on the role selection message.")
 @app_commands.describe(emote="Emote used to gain that role")
 @app_commands.describe(role="Name of role in discord (role will be created if it does not exist)")
 async def add_role(interaction: discord.Interaction, emote: str, role: str):
@@ -695,35 +695,54 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
         payload=f'User {interaction.user.name} invoked the /add_role command',
         severity='Debug'
     )
+    # message can take longer than 3 second timeout. defer for 5 seconds
+    await interaction.response.defer(ephemeral=True)
+
     # check if a messageID has been defined for this server
     # if a messageID has not been defined in the database
-    messageDict = firestore.get_messageID
+    messageDict = firestore.get_role_message(interaction.guild_id)
     if messageDict:
         try:
             channel = bot.get_channel(messageDict['channelID'])
-            await channel.fetch_message(messageDict['messageID'])
+            message = await channel.fetch_message(messageDict['messageID'])
         except discord.error.NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
-            await interaction.response.send_message(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
+            await interaction.followup.send(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
+            return
 
     # check if a discord role exists. if it does not, create one
     try:
-        discord.utils.get(interaction.guild.roles, name="Supporter")
-    except discord.error.NotFound: #if a NotFound error appears, the role either not in this channel or deleted. Create it
-        await interaction.guild.create_role(name=role)
+        existingRole = discord.utils.get(interaction.guild.roles, name=str(role).lower())
+        if existingRole == None: # if a role doesnt exist, create one
+            await interaction.guild.create_role(name=str(role).lower())
+    except Exception as e:
+            logger.write_log(
+                action='/translate',
+                payload=str(e),
+                severity='Error'
+            )
+            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+            adminUser = interaction.guild.get_member(int(admin_user_id))
+            await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
+            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)    
 
     # update firestore
     try:
         admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
         if interaction.user.id != int(admin_user_id):
-            await interaction.response.send_message(f"{interaction.user.name}, you do not have permission to use this command.", ephemeral=True)
+            await interaction.followup.send(f"{interaction.user.name}, you do not have permission to use this command.", ephemeral=True)
             logger.write_log(
                 action='/add_role',
                 payload=f'User {interaction.user.name} was blocked from using the /add_role command',
                 severity='Debug'
             )
             return
-        response = firestore.add_role(interaction.guild_id, emote, role) # attempts to add role. If response returns it was successful
-        await interaction.response.send_message(f"Hello {interaction.user.name}, {response}")
+        roleID = discord.utils.get(interaction.guild.roles, name=str(role).lower())
+        firestore.add_role(interaction.guild_id, emote, role, roleID.id) # attempts to add role. If response returns it was successful
+        logger.write_log(
+                action='/add_role',
+                payload=f'Successfully added a firestore entry for {emote}, {role} to guild {interaction.guild_id}',
+                severity='Debug'
+            )
 
     except Exception as e:
         logger.write_log(
@@ -732,7 +751,29 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
             severity='Error'
         )
 
-    # add an emote to the role message
+    # update the description of the role message by editing the existing message
+    # first, get a list of roles for the description. We need to recreate the message entirely
+    role_list = firestore.show_roles(interaction.guild_id)
+    # if roles exist, add them first to description
+    description = ''
+    for dict in role_list:
+        description += f'\n{dict["roleEmote"]} | <@&{dict["roleID"]}>'
+
+    # update the message
+    embed = discord.Embed(
+        colour=discord.Color.dark_teal(),
+        title=messageDict['messageTitle'],
+        description=description
+        # initial embed will tell the user to add new roles       
+        )
+    await message.edit(embed=embed)
+
+    # add an emote to the role message for each role in role_list
+    for dict in role_list:
+        await message.add_reaction(dict['roleEmote'])
+
+    # notify the user of success
+    await interaction.followup.send(f'Successfully added a new role selection for {emote} | <@&{dict["roleID"]}>',ephemeral=True)
 
 
 '''
@@ -805,7 +846,7 @@ async def on_raw_reaction_add(payload):
     '''
 
     # get the server_config for a channel from firestore. uses the guild_id from the incoming payload
-    messageId = firestore.get_messageID(payload.guild_id)
+    messageId = firestore.get_role_message(payload.guild_id) # BUG - THIS NEEDS TO BE UPDATED
 
     # create a guild object used for other things.
     guild = bot.get_guild(payload.guild_id)
@@ -842,7 +883,7 @@ async def on_raw_reaction_remove(payload):
     '''
 
     # get the server_config for a channel from firestore. uses the guild_id from the incoming payload
-    messageId = firestore.get_messageID(payload.guild_id)
+    messageId = firestore.get_role_message(payload.guild_id) # BUG: THIS NEEDS TO BE UPDATED
 
     # create a guild object used for other things.
     guild = bot.get_guild(payload.guild_id)

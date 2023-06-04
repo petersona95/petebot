@@ -17,21 +17,22 @@ cred = credentials.ApplicationDefault()
 app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-def set_messageID(guildID, messageID, channelID):
+def set_role_message(guildID, messageID, channelID, title):
     '''
     Set the value for a messageID in firestore. Will also create the feature for roleSelect in a channel
     '''
     # otherwise add user to collection
     data = {
         u'enabled': 'true',
-        u'messageID': messageID,
-        u'channelID': channelID
+        u'messageID': str(messageID),
+        u'channelID': str(channelID),
+        u'messageTitle': title
     }
     # add the document
     db.collection(u'servers').document(str(guildID)).collection(u'features').document(u'roleSelect').set(data)
 
 
-def get_messageID(guildID):
+def get_role_message(guildID):
     '''
     Look up document based on GuildID. Return the messageID saved for that server.
     '''
@@ -42,7 +43,8 @@ def get_messageID(guildID):
         doc_json = doc.to_dict()
         response = {
             'messageID' : int(doc_json['messageID']),
-            'channelID' : int(doc_json['channelID'])
+            'channelID' : int(doc_json['channelID']),
+            'messageTitle': doc_json['messageTitle']
         }
         return response # its a string in firestore, convert to int to match payload}
     else:
@@ -51,6 +53,7 @@ def get_messageID(guildID):
             payload=f"The roleSelect feature was not found. No action was taken.",
             severity='Warning'
         )
+    return None # no collection found
 
 
 def get_role(guildID, payloadEmote):
@@ -72,7 +75,7 @@ def get_role(guildID, payloadEmote):
         )
         return None
 
-def add_role(guildID, payloadEmote, roleName):
+def add_role(guildID, payloadEmote, roleName, roleID):
     '''
     if role collection doesn't exist, it will be created
     if a document for the emote already exists, it will be overwritten
@@ -95,7 +98,8 @@ def add_role(guildID, payloadEmote, roleName):
     # add an emote:roleName to roles collection
     data = {
         u'roleName': roleName,
-        u'roleEmote': payloadEmote
+        u'roleEmote': payloadEmote,
+        u'roleID': str(roleID)
     }
     # add the document
     db.collection(u'servers').document(str(guildID)).collection(u'features').document('roleSelect').collection(u'roles').document(payloadEmote).set(data)
@@ -152,7 +156,7 @@ def show_roles(guildID):
     Return a list of roles to a user
     '''
     # stream used to retrieve multiple docs
-    docs = db.collection(u'servers').document(str(guildID)).collection(u'roles').stream()
+    docs = db.collection(u'servers').document(str(guildID)).collection(u'features').document('roleSelect').collection(u'roles').stream()
     doc_list = []
     for doc in docs:
         doc_list.append(doc.to_dict())
