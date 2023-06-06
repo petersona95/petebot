@@ -68,9 +68,6 @@ class ViewAllianceSelection(discord.ui.View):
     @discord.ui.button(label = "NONA", custom_id = "Role 1", style = discord.ButtonStyle.blurple)
     async def NONA(self, interaction: discord.Interaction, button:discord.Button):
         await interaction.response.send_modal(ModalApplicationForm(roleName='NONA'))
-    @discord.ui.button(label = "TFM", custom_id = "Role 2", style = discord.ButtonStyle.green)
-    async def TFM(self, interaction: discord.Interaction, button:discord.Button):
-        await interaction.response.send_modal(ModalApplicationForm(roleName='TFM'))
     @discord.ui.button(label = "WP", custom_id = "Role 3", style = discord.ButtonStyle.red)
     async def WP(self, interaction: discord.Interaction, button:discord.Button):
         await interaction.response.send_modal(ModalApplicationForm(roleName='WP'))
@@ -234,7 +231,6 @@ Show all pending invites to respective
 @app_commands.choices(alliance=[
         app_commands.Choice(name="DLT", value="DLT"),
         app_commands.Choice(name="NONA", value="NONA"),
-        app_commands.Choice(name="TFM", value="TFM"),
         app_commands.Choice(name="TCO", value="TCO"),
         app_commands.Choice(name="WP", value="WP")
         ])
@@ -298,7 +294,6 @@ Approve everyone
 @app_commands.choices(alliance=[
         app_commands.Choice(name="DLT", value="DLT"),
         app_commands.Choice(name="NONA", value="NONA"),
-        app_commands.Choice(name="TFM", value="TFM"),
         app_commands.Choice(name="TCO", value="TCO"),
         app_commands.Choice(name="WP", value="WP")
         ])
@@ -400,7 +395,6 @@ Approve an applicant
 @app_commands.choices(alliance=[
         app_commands.Choice(name="DLT", value="DLT"),
         app_commands.Choice(name="NONA", value="NONA"),
-        app_commands.Choice(name="TFM", value="TFM"),
         app_commands.Choice(name="TCO", value="TCO"),
         app_commands.Choice(name="WP", value="WP")
         ])
@@ -491,7 +485,6 @@ Reject an applicant
 @app_commands.choices(alliance=[
         app_commands.Choice(name="DLT", value="DLT"),
         app_commands.Choice(name="NONA", value="NONA"),
-        app_commands.Choice(name="TFM", value="TFM"),
         app_commands.Choice(name="TCO", value="TCO"),
         app_commands.Choice(name="WP", value="WP")
         ])
@@ -700,14 +693,30 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
 
     # check if a messageID has been defined for this server
     # if a messageID has not been defined in the database
-    messageDict = firestore.get_role_message(interaction.guild_id)
+    try:
+        messageDict = firestore.get_role_message(interaction.guild_id)
+    except Exception as e:
+        logger.write_log(
+            action='/translate',
+            payload=str(e),
+            severity='Error'
+        )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
+        return
+
     if messageDict:
         try:
             channel = bot.get_channel(messageDict['channelID'])
             message = await channel.fetch_message(messageDict['messageID'])
-        except discord.error.NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
-            await interaction.followup.send(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
+        except discord.errors.NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
+            await interaction.followup.send(f"The channel or message originally set with /set_role_message no longer exists. Please create a new role selection message by using /set_role_message")
             return
+    else:
+        await interaction.followup.send(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
+        return
 
     # check if a discord role exists. if it does not, create one
     try:
@@ -715,15 +724,16 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
         if existingRole == None: # if a role doesnt exist, create one
             await interaction.guild.create_role(name=str(role).lower())
     except Exception as e:
-            logger.write_log(
-                action='/translate',
-                payload=str(e),
-                severity='Error'
-            )
-            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
-            adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
-            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)    
+        logger.write_log(
+            action='/translate',
+            payload=str(e),
+            severity='Error'
+        )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
+        return    
 
     # update firestore
     try:
@@ -750,30 +760,48 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
             payload=str(e),
             severity='Error'
         )
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
+        return
+    
+    try:
+        # update the description of the role message by editing the existing message
+        # first, get a list of roles for the description. We need to recreate the message entirely
+        role_list = firestore.show_roles(interaction.guild_id)
+        # if roles exist, add them first to description
+        description = ''
+        for dict in role_list:
+            description += f'\n{dict["roleEmote"]} | <@&{dict["roleID"]}>'
 
-    # update the description of the role message by editing the existing message
-    # first, get a list of roles for the description. We need to recreate the message entirely
-    role_list = firestore.show_roles(interaction.guild_id)
-    # if roles exist, add them first to description
-    description = ''
-    for dict in role_list:
-        description += f'\n{dict["roleEmote"]} | <@&{dict["roleID"]}>'
+        # update the message
+        embed = discord.Embed(
+            colour=discord.Color.dark_teal(),
+            title=messageDict['messageTitle'],
+            description=description
+            # initial embed will tell the user to add new roles       
+            )
+        await message.edit(embed=embed)
 
-    # update the message
-    embed = discord.Embed(
-        colour=discord.Color.dark_teal(),
-        title=messageDict['messageTitle'],
-        description=description
-        # initial embed will tell the user to add new roles       
+        # add an emote to the role message for each role in role_list
+        for dict in role_list:
+            await message.add_reaction(dict['roleEmote'])
+
+        # notify the user of success
+        await interaction.followup.send(f'Successfully added a new role selection for {emote} | <@&{dict["roleID"]}>',ephemeral=True)
+
+    except Exception as e:
+        logger.write_log(
+            action='/add_role',
+            payload=str(e),
+            severity='Error'
         )
-    await message.edit(embed=embed)
-
-    # add an emote to the role message for each role in role_list
-    for dict in role_list:
-        await message.add_reaction(dict['roleEmote'])
-
-    # notify the user of success
-    await interaction.followup.send(f'Successfully added a new role selection for {emote} | <@&{dict["roleID"]}>',ephemeral=True)
+        admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+        adminUser = interaction.guild.get_member(int(admin_user_id))
+        await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
+        await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
+        return
 
 
 '''
