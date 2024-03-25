@@ -60,7 +60,7 @@ def get_role(guildID, payloadEmote):
     '''
     Return a role when given an emote
     '''
-    doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote)
+    doc_ref = db.collection(u'servers').document(str(guildID)).collection('features').document('roleSelect').collection(u'roles').document(payloadEmote)
     doc = doc_ref.get()
 
     if doc.exists:
@@ -126,7 +126,7 @@ def remove_role(guildID, payloadEmote):
     '''
 
     # check if the emote already exists
-    doc_ref = db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote)
+    doc_ref = db.collection(u'servers').document(str(guildID)).collection('features').document('roleSelect').collection(u'roles').document(payloadEmote)
     doc = doc_ref.get()
     exists = False
     user_response = ''
@@ -134,7 +134,7 @@ def remove_role(guildID, payloadEmote):
         doc_json = doc.to_dict()
         RoleName = doc_json['roleName']
         # delete an emote:roleName to roles collection
-        db.collection(u'servers').document(str(guildID)).collection(u'roles').document(payloadEmote).delete()
+        doc_ref.delete()
         user_response = f'Removed rule for the emote {payloadEmote} and role #{RoleName}.'
         logger.write_log(
             action=None,

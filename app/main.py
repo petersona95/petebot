@@ -40,7 +40,7 @@ async def on_ready():
         # syncing is used for /commands
         # Its used to show /command options available for users in discord itself. They're called trees in discord
         # by not defining a guild_id its considered a global tree. it can take up to 24 hours to refresh on servers
-        # BUG: I shouldn't have this here because every time the shard invalidates it re-syncs the functions.
+        # TODO: I shouldn't have this here because every time the shard invalidates it re-syncs the functions.
         '''
         2023-04-20 22:36:42 INFO     discord.gateway Shard ID None session has been invalidated.
         2023-04-20 22:36:47 INFO     discord.gateway Shard ID None has connected to Gateway (Session ID: 08fa2f592630f7558353482ffbd1f724).
@@ -677,7 +677,6 @@ async def translate_this(interaction: discord.Interaction, text: str, target_lan
 '''
 /ADD_ROLE:
 Ask user for emote/role. Create a new record for that association in Firestore
-BUG: Currently using custom emoji's does not work. the interaction receives a weird format for the emoji <yup:serverid?> but the assign roles sees :yup:
 '''
 @bot.tree.command(name="add_role", description="Create a new role/emote combination on the role selection message.")
 @app_commands.describe(emote="Emote used to gain that role")
@@ -874,7 +873,7 @@ async def on_raw_reaction_add(payload):
     '''
 
     # get the server_config for a channel from firestore. uses the guild_id from the incoming payload
-    messageId = firestore.get_role_message(payload.guild_id) # BUG - THIS NEEDS TO BE UPDATED
+    messageId = firestore.get_role_message(payload.guild_id)['messageID']
 
     # create a guild object used for other things.
     guild = bot.get_guild(payload.guild_id)
@@ -885,7 +884,7 @@ async def on_raw_reaction_add(payload):
 
     # look up the associated role in firestore based on the emote from the payload
     # do nothing if the reaction does not match a document in firestore
-    firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
+    firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name) # TODO: payload.emoji.name returns 'kek' rather than <kek:1234567890>
     if firestoreRoleName == None:
         logger.write_log(
             action='on_raw_reaction_add',
@@ -911,7 +910,7 @@ async def on_raw_reaction_remove(payload):
     '''
 
     # get the server_config for a channel from firestore. uses the guild_id from the incoming payload
-    messageId = firestore.get_role_message(payload.guild_id) # BUG: THIS NEEDS TO BE UPDATED
+    messageId = firestore.get_role_message(payload.guild_id)['messageID']
 
     # create a guild object used for other things.
     guild = bot.get_guild(payload.guild_id)
