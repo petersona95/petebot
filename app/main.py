@@ -771,8 +771,11 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
         role_list = firestore.show_roles(interaction.guild_id)
         # if roles exist, add them first to description
         description = ''
+        newRoleId = '' # keep track of the role we're trying to add to the list. Use this for the followup message
         for dict in role_list:
             description += f'\n{dict["roleEmote"]} | <@&{dict["roleID"]}>'
+            if dict['roleEmote'] == emote:
+                newRoleId = dict['roleID']
 
         # update the message
         embed = discord.Embed(
@@ -788,7 +791,7 @@ async def add_role(interaction: discord.Interaction, emote: str, role: str):
             await message.add_reaction(dict['roleEmote'])
 
         # notify the user of success
-        await interaction.followup.send(f'Successfully added a new role selection for {emote} | <@&{dict["roleID"]}>',ephemeral=True)
+        await interaction.followup.send(f'Successfully added a new role selection for {emote} | <@&{newRoleId}>',ephemeral=True)
 
     except Exception as e:
         logger.write_log(
@@ -884,11 +887,11 @@ async def on_raw_reaction_add(payload):
 
     # look up the associated role in firestore based on the emote from the payload
     # do nothing if the reaction does not match a document in firestore
-    firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name) # TODO: payload.emoji.name returns 'kek' rather than <kek:1234567890>
+    firestoreRoleName = firestore.get_role(payload.guild_id, str(payload.emoji))
     if firestoreRoleName == None:
         logger.write_log(
             action='on_raw_reaction_add',
-            payload=f"No Role configured for {payload.emoji.name}, taking no action.",
+            payload=f"No Role configured for {str(payload.emoji)}, taking no action.",
             severity='Debug'
         )
         return
@@ -899,7 +902,7 @@ async def on_raw_reaction_add(payload):
 
     logger.write_log(
         action='on_raw_reaction_add',
-        payload=f"User {payload.member} emoted {payload.emoji.name}. Adding role #{firestoreRoleName}.",
+        payload=f"User {payload.member} emoted {str(payload.emoji)}. Adding role #{firestoreRoleName}.",
         severity='Info'
     )
 
@@ -927,11 +930,11 @@ async def on_raw_reaction_remove(payload):
 
     # look up the associated role in firestore based on the emote from the payload
     # do nothing if the reaction does not match a document in firestore
-    firestoreRoleName = firestore.get_role(payload.guild_id, payload.emoji.name)
+    firestoreRoleName = firestore.get_role(payload.guild_id, str(payload.emoji))
     if firestoreRoleName == None:
         logger.write_log(
             action='on_raw_reaction_remove',
-            payload=f'No Role configured for {payload.emoji.name}, taking no action.',
+            payload=f'No Role configured for {str(payload.emoji)}, taking no action.',
             severity='Debug'
         )
         return
@@ -941,8 +944,13 @@ async def on_raw_reaction_remove(payload):
     await member_id.remove_roles(discordRoleName)
     logger.write_log(
         action='on_raw_reaction_remove',
-        payload=f'User {member} removed emote {payload.emoji.name}. Removing role #{firestoreRoleName}.',
+        payload=f'User {member} removed emote {str(payload.emoji)}. Removing role #{firestoreRoleName}.',
         severity='Info'
     )
 
 bot.run(token)
+
+
+# TODO: Separate this into multiple files. Sounds like it uses cogs and extensions - https://stackoverflow.com/questions/66662756/is-it-possible-to-split-a-discord-py-bot-across-multiple-files
+# TODO: Build functionality to create/delete BOT-<rolename> roles that the bot manages. Add functionality to remove reactions - https://stackoverflow.com/questions/68813945/discord-py-how-to-remove-all-reactions-from-a-message-added-by-a-specific-user
+    # i think the only way to remove reactions is  to loop over each reaction individually for each user.
