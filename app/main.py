@@ -74,5 +74,6 @@ bot = Client()
 bot.run(token)
 
 
+# TODO: Need to create an additional cog, UpdateRole? Or duplicate the code througout. The remove_role command doesnt reset the embedded message.
 # TODO: Build functionality to create/delete BOT-<rolename> roles that the bot manages. Add functionality to remove reactions - https://stackoverflow.com/questions/68813945/discord-py-how-to-remove-all-reactions-from-a-message-added-by-a-specific-user
     # i think the only way to remove reactions is  to loop over each reaction individually for each user.
