@@ -8,15 +8,9 @@ import logger # used to write logs to google log explorer as well as to stdout
 import gcp_secrets # used to get secrets from google secret manager
 
 class Translate(commands.Cog):
-    '''
-    Leverage google translate API to translate an input text to a target language.
-    '''
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="cog1",description="Cog1 description")
-    async def cog1(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Cog1 message")
 
     '''
     /TRANSLATE
@@ -67,13 +61,13 @@ class Translate(commands.Cog):
         except Exception as e:
             logger.write_log(
                 action='/translate',
-                payload=str(e),
+                payload=e,
                 severity='Error'
             )
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
             adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot; command /translate; {e}')
-            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.")    
+            await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
+            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
 
 
     '''
@@ -123,7 +117,7 @@ class Translate(commands.Cog):
         except Exception as e:
             logger.write_log(
                 action='/translate',
-                payload=str(e),
+                payload=e,
                 severity='Error'
             )
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')

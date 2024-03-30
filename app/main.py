@@ -65,7 +65,7 @@ class Client(commands.Bot):
         except Exception as e:
             logger.write_log(
                 action=None,
-                payload=str(e),
+                payload=e,
                 severity='Error'
             )
 
