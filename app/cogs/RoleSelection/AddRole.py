@@ -29,52 +29,27 @@ class AddRole(commands.Cog):
         # message can take longer than 3 second timeout. defer for 5 seconds
         await interaction.response.defer(ephemeral=True)
 
-        # check if a messageID has been defined for this server
-        # if a messageID has not been defined in the database
         try:
+            # check if a messageID has been defined for this server
+            # if a messageID has not been defined in the database
             messageDict = firestore.get_role_message(interaction.guild_id)
-        except Exception as e:
-            logger.write_log(
-                action='/translate',
-                payload=str(e),
-                severity='Error'
-            )
-            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
-            adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
-            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
-            return
-
-        if messageDict:
-            try:
-                channel = self.bot.get_channel(messageDict['channelID'])
-                message = await channel.fetch_message(messageDict['messageID'])
-            except discord.errors.NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
-                await interaction.followup.send(f"The channel or message originally set with /set_role_message no longer exists. Please create a new role selection message by using /set_role_message")
+            if messageDict:
+                try:
+                    channel = self.bot.get_channel(messageDict['channelID'])
+                    message = await channel.fetch_message(messageDict['messageID'])
+                except discord.errors.NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
+                    await interaction.followup.send(f"The channel or message originally set with /set_role_message no longer exists. Please create a new role selection message by using /set_role_message")
+                    return
+            else:
+                await interaction.followup.send(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
                 return
-        else:
-            await interaction.followup.send(f"A role message has not been defined for this server. Please create a role selection message by using /set_role_message")
-            return
 
-        # check if a discord role exists. if it does not, create one
-        try:
+            # check if a discord role exists. if it does not, create one
             existingRole = discord.utils.get(interaction.guild.roles, name=str(role).lower())
             if existingRole == None: # if a role doesnt exist, create one
                 await interaction.guild.create_role(name=str(role).lower())
-        except Exception as e:
-            logger.write_log(
-                action='/translate',
-                payload=str(e),
-                severity='Error'
-            )
-            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
-            adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
-            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
-            return    
-
-        # update firestore
-        try:
+    
+            # update firestore
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
             if interaction.user.id != int(admin_user_id):
                 await interaction.followup.send(f"{interaction.user.name}, you do not have permission to use this command.", ephemeral=True)
@@ -91,20 +66,7 @@ class AddRole(commands.Cog):
                     payload=f'Successfully added a firestore entry for {emote}, {role} to guild {interaction.guild_id}',
                     severity='Debug'
                 )
-
-        except Exception as e:
-            logger.write_log(
-                action='/add_role',
-                payload=str(e),
-                severity='Error'
-            )
-            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
-            adminUser = interaction.guild.get_member(int(admin_user_id))
-            await adminUser.send(f'An error occured in petebot; command /add_role; {e}')
-            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
-            return
-        
-        try:
+            
             # update the description of the role message by editing the existing message
             # first, get a list of roles for the description. We need to recreate the message entirely
             role_list = firestore.show_roles(interaction.guild_id)
@@ -135,7 +97,7 @@ class AddRole(commands.Cog):
         except Exception as e:
             logger.write_log(
                 action='/add_role',
-                payload=str(e),
+                payload=e,
                 severity='Error'
             )
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')

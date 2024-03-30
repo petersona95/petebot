@@ -22,12 +22,13 @@ class RemoveRole(commands.Cog):
     @app_commands.command(name="remove_role", description="Remove role/emote combination for this channel")
     @app_commands.describe(emote="Emote used to gain that role")
     async def remove_role(self, interaction: discord.Interaction, emote: str):
-        logger.write_log(
-            action='/remove_role',
-            payload=f'User {interaction.user.name} invoked the /remove_role command',
-            severity='Debug'
-        )
         try:
+            logger.write_log(
+                action='/remove_role',
+                payload=f'User {interaction.user.name} invoked the /remove_role command',
+                severity='Debug'
+            )
+
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
             if interaction.user.id != int(admin_user_id):
                 await interaction.response.send_message(f"{interaction.user.name}, you do not have permission to use this command.", ephemeral=True)
@@ -42,10 +43,15 @@ class RemoveRole(commands.Cog):
         
         except Exception as e:
             logger.write_log(
-                action='/remove_role',
-                payload=str(e),
+                action='/translate',
+                payload=e,
                 severity='Error'
             )
+            admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
+            adminUser = interaction.guild.get_member(int(admin_user_id))
+            await adminUser.send(f'An error occured in petebot; command /remove_role; {e}')
+            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
+            return
 
 
 async def setup(bot: commands.Bot):

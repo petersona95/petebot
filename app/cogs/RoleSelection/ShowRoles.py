@@ -34,7 +34,7 @@ class ShowRoles(commands.Cog):
         except Exception as e:
             logger.write_log(
                 action='!show_roles',
-                payload=str(e),
+                payload=e,
                 severity='Error'
             )
 

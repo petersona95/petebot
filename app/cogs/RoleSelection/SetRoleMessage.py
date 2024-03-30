@@ -19,15 +19,15 @@ class SetRoleMessage(commands.Cog):
     '''
     @app_commands.command(name="set_role_message", description="Create a message in the current channel for role selection.")
     @app_commands.describe(title="What is the title of your welcome message? ex: Welcome to my channel! Please select a role from the options below.")
-
     async def set_role_message(self, interaction: discord.Interaction, title: str):
-        logger.write_log(
-        action='/set_role_message',
-        payload=f'User {interaction.user} invoked the /set_title_message command.',
-        severity='Debug'
-        )
-        # create an initial embed as a base point
         try:
+            logger.write_log(
+            action='/set_role_message',
+            payload=f'User {interaction.user} invoked the /set_title_message command.',
+            severity='Debug'
+            )
+            
+            # create an initial embed as a base point
             embed = discord.Embed(
                 colour=discord.Color.dark_teal(),
                 title=title,
@@ -42,13 +42,15 @@ class SetRoleMessage(commands.Cog):
 
         except Exception as e:
             logger.write_log(
-                action=None,
-                payload=str(e),
+                action='/translate',
+                payload=e,
                 severity='Error'
             )
             admin_user_id = gcp_secrets.get_secret_contents('discord-bot-admin-user-id')
             adminUser = interaction.guild.get_member(int(admin_user_id))
             await adminUser.send(f'An error occured in petebot; command /set_role_message; channel {interaction.channel_id}; {e}')
+            await interaction.followup.send(f"Hello <@{interaction.user.id}>. This command has failed. A notification has been sent to admin to investigate.", ephemeral=True)
+            return
 
 
 async def setup(bot: commands.Bot):
