@@ -71,7 +71,7 @@ class AddRole(commands.Cog):
             # first, get a list of roles for the description. We need to recreate the message entirely
             role_list = firestore.show_roles(interaction.guild_id)
             # if roles exist, add them first to description
-            description = ''
+            description = messageDict['messageDescription'] + '\n---'
             newRoleId = '' # keep track of the role we're trying to add to the list. Use this for the followup message
             for dict in role_list:
                 description += f'\n{dict["roleEmote"]} | <@&{dict["roleID"]}>'

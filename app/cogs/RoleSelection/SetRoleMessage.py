@@ -18,8 +18,9 @@ class SetRoleMessage(commands.Cog):
     Create a new SELECT ROLE message.
     '''
     @app_commands.command(name="set_role_message", description="Create a message in the current channel for role selection.")
-    @app_commands.describe(title="What is the title of your welcome message? ex: Welcome to my channel! Please select a role from the options below.")
-    async def set_role_message(self, interaction: discord.Interaction, title: str):
+    @app_commands.describe(title="What is the title of your welcome message? ex: Welcome to my channel!")
+    @app_commands.describe(description="What is the description of your welcome message? Add more detail than just the title alone. ex: Here are instructions")
+    async def set_role_message(self, interaction: discord.Interaction, title: str, description: str):
         try:
             logger.write_log(
             action='/set_role_message',
@@ -31,14 +32,17 @@ class SetRoleMessage(commands.Cog):
             embed = discord.Embed(
                 colour=discord.Color.dark_teal(),
                 title=title,
-                description='Use /add_role to add new role|emote combinations in your channel. You can only have one role selection message active at a time, so using /set_role_message again will replace this message.'
-                # initial embed will tell the user to add new roles       
+                description=('Use /add_role to add new role|emote combinations in your channel. '
+                             'You can only have one role selection message active at a time, '
+                             'so using /set_role_message again will replace this message with the description you provided.'
                 )
+                # initial embed will tell the user to add new roles       
+            )
             await interaction.response.send_message(embed=embed)
             # get the messageID for this role_message
             message = await interaction.original_response()
             # add messageID to firestore
-            firestore.set_role_message(interaction.guild_id, message.id, interaction.channel_id, title)
+            firestore.set_role_message(interaction.guild_id, message.id, interaction.channel_id, title, description)
 
         except Exception as e:
             logger.write_log(

@@ -17,7 +17,7 @@ cred = credentials.ApplicationDefault()
 app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-def set_role_message(guildID, messageID, channelID, title):
+def set_role_message(guildID, messageID, channelID, title, description):
     '''
     Set the value for a messageID in firestore. Will also create the feature for roleSelect in a channel
     '''
@@ -26,7 +26,8 @@ def set_role_message(guildID, messageID, channelID, title):
         u'enabled': 'true',
         u'messageID': str(messageID),
         u'channelID': str(channelID),
-        u'messageTitle': title
+        u'messageTitle': title,
+        u'messageDescription':description
     }
     # add the document
     db.collection(u'servers').document(str(guildID)).collection(u'features').document(u'roleSelect').set(data)
@@ -44,7 +45,8 @@ def get_role_message(guildID):
         response = {
             'messageID' : int(doc_json['messageID']),
             'channelID' : int(doc_json['channelID']),
-            'messageTitle': doc_json['messageTitle']
+            'messageTitle': doc_json['messageTitle'],
+            'messageDescription': doc_json['messageDescription']
         }
         return response # its a string in firestore, convert to int to match payload}
     else:
