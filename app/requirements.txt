@@ -3,4 +3,3 @@ google-cloud-secret-manager
 google-cloud-logging
 google-cloud-translate
 firebase_admin
-table2ascii

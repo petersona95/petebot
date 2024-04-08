@@ -18,7 +18,7 @@ Currently the bot watches for emotes on a specific message. Upon seeing an emote
 `docker build --build-arg local_build=true -t python-role-bot-dev .`
 
 2. Run the built container locally
-`docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -e env=dev -p 5000:5000 python-role-bot-dev:latest`
+`docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -e env=dev -e debug=true -p 5000:5000 python-role-bot-dev:latest`
 
 Tip: If you get "port is busy" you need to disable airplay in mac settings. It uses the same port as docker.
 

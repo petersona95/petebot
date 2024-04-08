@@ -2,6 +2,8 @@ from google.cloud import logging as gcp_logging
 import logging
 from sys import stdout
 import os
+import traceback
+
 
 debug = os.getenv('debug') # only print docker logs if debug=True
 env = os.getenv('env')
@@ -27,6 +29,8 @@ consoleHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
 
 def write_log(action, payload, severity):
+    if isinstance(payload, BaseException):
+        payload = ''.join(traceback.format_exception(type(payload), payload, payload.__traceback__))
     try:
         gcp_logger.log_struct(
             {
