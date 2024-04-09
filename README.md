@@ -12,6 +12,15 @@ Currently the bot watches for emotes on a specific message. Upon seeing an emote
 - Firebase Firestore
 
 # Using the Bot:
+## Running the code locally:
+
+1. Change to app directory
+`cd app`
+
+2. Run the code locally
+`GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" env=dev debug=true python main.py`
+
+
 ## Running the Container Locally:
 
 1. Run the build file
@@ -21,7 +30,6 @@ Currently the bot watches for emotes on a specific message. Upon seeing an emote
 `docker run -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" -e env=dev -e debug=true -p 5000:5000 python-role-bot-dev:latest`
 
 Tip: If you get "port is busy" you need to disable airplay in mac settings. It uses the same port as docker.
-
 
 
 ## Running Docker on VM: 
@@ -49,15 +57,8 @@ gcloud config set project discord-role-bot-380821
 - This will make the default credential your personal login
 
 
-## Now that I have Google Cloud CLI, how do I make it work in my Docker container locally?:
-### IT IS UNCLEAR AT THIS TIME IF THIS DID ANYTHING
-1). In terminal, run:
-`gcloud components install docker-credential-gcr`
-
-2). Restart terminal, then run:
-`docker-credential-gcr configure-docker`
-
-### How I actually got it to work:
+## Now that I have Google Cloud CLI, how do I make it work in my Docker container locally?
+### How do I get credentials for google cloud?
 1). Create a service account in google. From there, create a credential.json file from that service account and download it to your machine. Put this cred.json in .gitignore and in the app/ folder.
 ```
 add -e GOOGLE_APPLICATION_CREDENTIALS="svc-acct-cred.json" when you run docker
