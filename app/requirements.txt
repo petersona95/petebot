@@ -3,3 +3,4 @@ google-cloud-secret-manager
 google-cloud-logging
 google-cloud-translate
 firebase_admin
+google-cloud-firestore

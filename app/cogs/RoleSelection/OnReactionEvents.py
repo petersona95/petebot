@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 # py files
-import firestore # used to talk to firestore
+import firestore_utils as firestore # used to talk to firestore
 import logger # used to write logs to google log explorer as well as to stdout
 
 

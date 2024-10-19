@@ -2,3 +2,5 @@ svc-acct-cred.json
 venv
 .venv
 .DS_Store
+.idea
+*.env

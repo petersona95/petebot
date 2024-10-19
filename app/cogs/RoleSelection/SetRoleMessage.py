@@ -4,7 +4,7 @@ from discord import app_commands
 
 # py files
 import gcp_secrets # function to retrieve discord private key from gcp secret manager
-import firestore # used to talk to firestore
+import firestore_utils as firestore # used to talk to firestore
 import logger # used to write logs to google log explorer as well as to stdout
 
 

@@ -163,3 +163,11 @@ def show_roles(guildID):
     for doc in docs:
         doc_list.append(doc.to_dict())
     return doc_list
+
+
+def log_activity(guildID, content):
+    '''
+    Write a voice activity record to firestore
+    '''
+    # add the document
+    db.collection(u'servers').document(str(guildID)).collection(u'features').document(u'activityTracking').collection(u'voiceActivity').add(content)
